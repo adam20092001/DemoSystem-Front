@@ -1,0 +1,48 @@
+<div class="app-frame">
+  @if (menuOpen()) { <div class="scrim" (click)="menuOpen.set(false)"></div> }
+
+  <aside class="sidebar" [class.is-open]="menuOpen()">
+    <a class="brand" routerLink="/dashboard" (click)="menuOpen.set(false)">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+          <path d="M4 20V9l8-5 8 5v11" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M9 20v-6h6v6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="brand-text"><strong>IMDIMAQ</strong><small>Gestión comercial</small></span>
+    </a>
+
+    <nav>
+      <span class="nav-caption">Espacio de trabajo</span>
+      @for (item of visibleNav(); track item.route) {
+        <a [routerLink]="item.route" routerLinkActive="active" (click)="menuOpen.set(false)">
+          <span class="nav-icon" [innerHTML]="icon(item.icon)"></span>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="profile">
+      <span class="avatar">{{ initials() }}</span>
+      <span class="profile-text"><strong>{{ auth.userName() }}</strong><small>{{ roleLabel(auth.role()) }}</small></span>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <button class="menu-button btn btn--quiet" (click)="menuOpen.set(!menuOpen())" aria-label="Abrir menú">☰</button>
+      <div class="context">
+        <span class="context-title">Almacén General</span>
+        <span class="context-sub">Moneda S/ · IGV 18% · Entorno de demostración</span>
+      </div>
+      <label class="role-switch">
+        <span>Vista demo</span>
+        <select [value]="auth.role()" (change)="auth.setRole($any($event.target).value)">
+          @for (role of roles; track role) { <option [value]="role">{{ roleLabel(role) }}</option> }
+        </select>
+      </label>
+    </header>
+
+    <section class="page"><router-outlet /></section>
+  </main>
+</div>

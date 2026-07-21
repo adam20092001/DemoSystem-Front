@@ -1,0 +1,81 @@
+<header class="page-head">
+  <div>
+    <p class="eyebrow">Panorama de hoy</p>
+    <h1>Buenos días, {{ 'Mariana' }}</h1>
+    <p class="page-sub">Esto es lo más importante de tu operación en este momento.</p>
+  </div>
+  <a routerLink="/pos" class="btn btn--primary">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    Nueva venta
+  </a>
+</header>
+
+<section class="metrics">
+  @for (m of metrics; track m.label) {
+    <article class="metric surface">
+      <div class="metric-head">
+        <p>{{ m.label }}</p>
+        <span class="badge" [class]="'badge--' + m.tone">{{ m.delta }}</span>
+      </div>
+      <strong class="mono">{{ m.value }}</strong>
+      <small>{{ m.note }}</small>
+    </article>
+  }
+</section>
+
+<section class="grid">
+  <article class="panel chart-panel surface">
+    <header class="panel-head">
+      <div><p class="eyebrow">Rendimiento</p><h2>Ventas de la semana</h2></div>
+      <strong class="mono panel-total">{{ weekTotal }}</strong>
+    </header>
+    <div class="chart">
+      @for (b of week; track b.day) {
+        <div class="bar-col">
+          <div class="bar" [style.height.%]="b.pct"></div>
+          <small>{{ b.day }}</small>
+        </div>
+      }
+    </div>
+  </article>
+
+  <article class="panel surface">
+    <header class="panel-head"><div><p class="eyebrow">Pipeline</p><h2>Cotizaciones</h2></div></header>
+    <div class="donut-wrap">
+      <div class="donut" [style.background]="donut.gradient">
+        <span><strong class="mono">{{ donut.total }}</strong><small>en curso</small></span>
+      </div>
+    </div>
+    <ul class="pipeline">
+      @for (p of pipeline; track p.label) {
+        <li><i [class]="'dot dot--' + p.tone"></i>{{ p.label }}<b class="mono">{{ p.count }}</b></li>
+      }
+    </ul>
+  </article>
+
+  <article class="panel activity surface">
+    <header class="panel-head"><div><p class="eyebrow">Actividad reciente</p><h2>Últimas ventas</h2></div><a routerLink="/sales" class="link">Ver todas</a></header>
+    <table>
+      <tbody>
+        @for (s of activity; track s.code) {
+          <tr>
+            <td class="mono code">{{ s.code }}</td>
+            <td class="client">{{ s.client }}</td>
+            <td class="mono time">{{ s.time }}</td>
+            <td class="mono amount">{{ s.amount }}</td>
+            <td><span class="badge" [class]="'badge--' + s.tone">{{ s.status }}</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </article>
+
+  <aside class="panel attention surface">
+    <header class="panel-head"><div><p class="eyebrow">Requiere atención</p><h2>Acciones pendientes</h2></div></header>
+    <ul>
+      @for (a of attention; track a.route) {
+        <li><a [routerLink]="a.route"><i [class]="'dot dot--' + a.tone"></i><span>{{ a.label }}</span><b>→</b></a></li>
+      }
+    </ul>
+  </aside>
+</section>
