@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'brand';
+type Trend = 'up' | 'down' | 'flat';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,10 +13,10 @@ type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'brand';
 })
 export class DashboardPage {
   protected readonly metrics = [
-    { label: 'Ventas de hoy', value: 'S/ 8,460.50', note: '18 operaciones', delta: '+12.4%', tone: 'ok' as Tone },
-    { label: 'Cobros de hoy', value: 'S/ 6,280.00', note: '74% de lo vendido', delta: '+8.1%', tone: 'info' as Tone },
-    { label: 'Por cobrar', value: 'S/ 14,320.00', note: '7 clientes con saldo', delta: '3 vencidos', tone: 'danger' as Tone },
-    { label: 'Stock bajo', value: '6 productos', note: 'bajo el mínimo', delta: '2 críticos', tone: 'warn' as Tone },
+    { label: 'Ventas de hoy', value: 'S/ 8,460.50', note: '18 operaciones', delta: '+12.4% vs. ayer', trend: 'up' as Trend },
+    { label: 'Cobros de hoy', value: 'S/ 6,280.00', note: '74% de lo vendido', delta: '+8.1% vs. ayer', trend: 'up' as Trend },
+    { label: 'Por cobrar', value: 'S/ 14,320.00', note: '7 clientes con saldo', delta: '3 saldos vencidos', trend: 'down' as Trend },
+    { label: 'Stock bajo', value: '6 productos', note: 'bajo el mínimo', delta: '2 críticos', trend: 'down' as Trend },
   ];
 
   protected readonly week = [
@@ -45,19 +46,9 @@ export class DashboardPage {
 
   protected readonly weekTotal = 'S/ 42,680';
 
-  /** Ángulos acumulados para el gráfico de dona de cotizaciones. */
-  protected get donut(): { gradient: string; total: number } {
-    const total = this.pipeline.reduce((sum, p) => sum + p.count, 0);
-    const colors: Record<Tone, string> = {
-      ok: 'var(--ok)', warn: 'var(--warn)', danger: 'var(--danger)', info: 'var(--info)', brand: 'var(--brand)',
-    };
-    let acc = 0;
-    const stops = this.pipeline.map(p => {
-      const from = (acc / total) * 100;
-      acc += p.count;
-      const to = (acc / total) * 100;
-      return `${colors[p.tone]} ${from}% ${to}%`;
-    });
-    return { gradient: `conic-gradient(${stops.join(', ')})`, total };
+  protected readonly pipelineTotal = this.pipeline.reduce((sum, p) => sum + p.count, 0);
+
+  protected share(count: number): number {
+    return Math.round((count / this.pipelineTotal) * 100);
   }
 }

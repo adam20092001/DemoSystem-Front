@@ -1,44 +1,42 @@
-.login { min-height: 100vh; display: grid; grid-template-columns: 1.05fr 0.95fr; background: var(--canvas); }
+.login { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; background: var(--canvas); }
 
-/* --- Panel promocional (acero industrial) --------------------------------- */
+/* --- Panel institucional (acero, plano, sin ornamento decorativo) --------- */
 .promo {
-  position: relative; overflow: hidden;
-  padding: 44px 5vw; display: flex; flex-direction: column;
+  padding: 44px 4.5vw; display: flex; flex-direction: column;
   background: var(--shell); color: var(--shell-ink);
+  border-right: 1px solid var(--shell-line);
 }
-/* Textura industrial sutil: rejilla técnica + halo de marca */
-.promo::before {
-  content: ''; position: absolute; inset: 0;
-  background-image:
-    radial-gradient(120% 80% at 100% 0%, oklch(0.70 0.185 48 / 0.20), transparent 55%),
-    linear-gradient(oklch(1 0 0 / 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(1 0 0 / 0.03) 1px, transparent 1px);
-  background-size: 100% 100%, 40px 40px, 40px 40px;
-  pointer-events: none;
+
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: #fff; font-size: 16px; font-weight: 700; letter-spacing: 0.03em; }
+.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--r-md); background: var(--brand); color: var(--brand-on); }
+
+.promo-body { margin: auto 0 32px; max-width: 34ch; }
+.promo-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.01em; color: var(--shell-muted); margin: 0 0 14px; }
+.promo h1 { font-size: clamp(26px, 2.6vw, 34px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin: 0 0 14px; text-wrap: balance; }
+.promo .lead { color: var(--shell-muted); font-size: 14px; line-height: 1.6; max-width: 40ch; margin: 0; }
+
+.module-list {
+  list-style: none; margin: 0; padding: 20px 0 0; display: grid; gap: 10px;
+  border-top: 1px solid var(--shell-line); font-size: 13px; color: var(--shell-ink);
 }
-.promo > * { position: relative; }
+.module-list li { display: flex; align-items: center; gap: 10px; }
+.module-list li::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--brand); flex-shrink: 0;
+}
 
-.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; font-size: 19px; font-weight: 800; letter-spacing: 0.05em; }
-.brand-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-md); background: var(--brand); color: var(--brand-on); }
-
-.promo-body { margin: auto 0; max-width: 30ch; }
-.promo .eyebrow { color: var(--brand); }
-.promo h1 { font-size: clamp(30px, 3.6vw, 48px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; margin: 16px 0 20px; text-wrap: balance; }
-.promo h1 em { font-style: normal; color: var(--brand); }
-.promo .lead { color: var(--shell-muted); font-size: 15px; line-height: 1.6; max-width: 42ch; }
-
-.promo-stats { list-style: none; margin: 0; padding: 22px 0 0; display: flex; gap: 34px; border-top: 1px solid var(--shell-line); }
-.promo-stats strong { display: block; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
-.promo-stats span { display: block; font-size: 11.5px; color: var(--shell-muted); margin-top: 3px; }
-
-/* --- Panel de acceso ------------------------------------------------------- */
+/* --- Panel de acceso -------------------------------------------------------- */
 .access { display: grid; place-items: center; padding: 44px 24px; }
-form { width: min(380px, 100%); }
-form h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 6px; }
-form .sub { color: var(--muted); font-size: 14px; margin: 0 0 26px; }
+form { width: min(360px, 100%); }
+form .eyebrow { margin-bottom: 8px; }
+form h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 6px; }
+form .sub { color: var(--muted); font-size: 13.5px; margin: 0 0 24px; }
 form .field { margin-top: 16px; }
-.submit { width: 100%; height: 46px; margin-top: 26px; font-size: 14px; }
-.hint { text-align: center; color: var(--muted); font-size: 12px; margin: 16px 0 0; }
+.error-banner {
+  margin: 18px 0 0; padding: 10px 12px; border-radius: var(--r-md);
+  background: var(--danger-tint); color: var(--danger-ink); font-size: 12.5px; font-weight: 600;
+}
+.submit { width: 100%; height: 44px; margin-top: 24px; font-size: 13.5px; }
+.hint { text-align: center; color: var(--muted); font-size: 11.5px; margin: 16px 0 0; }
 
 @media (max-width: 860px) {
   .login { grid-template-columns: 1fr; }

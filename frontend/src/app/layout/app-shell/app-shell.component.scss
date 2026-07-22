@@ -14,7 +14,7 @@
 .brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 24px; text-decoration: none; color: #fff; }
 .brand-mark {
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--r-md);
-  background: var(--brand); color: var(--brand-on); box-shadow: 0 4px 12px oklch(0.70 0.185 48 / 0.35);
+  background: var(--brand); color: var(--brand-on);
 }
 .brand-text strong { display: block; font-size: 16px; font-weight: 800; letter-spacing: 0.04em; }
 .brand-text small { display: block; font-size: 11px; color: var(--shell-muted); margin-top: 1px; }
@@ -31,7 +31,7 @@ nav a {
   transition: background var(--t) var(--ease), color var(--t) var(--ease);
 }
 nav a:hover { background: var(--shell-2); color: var(--shell-ink); }
-nav a.active { background: var(--brand); color: var(--brand-on); font-weight: 600; }
+nav a.active { background: var(--shell-2); color: var(--brand); font-weight: 600; }
 nav a.active .nav-icon { opacity: 1; }
 .nav-icon { display: grid; place-items: center; width: 20px; height: 20px; opacity: 0.85; }
 .nav-icon svg { width: 20px; height: 20px; }
@@ -47,8 +47,16 @@ nav a.active .nav-icon { opacity: 1; }
   background: var(--shell-2); color: var(--shell-ink); font-weight: 700; font-size: 13px;
   border: 1px solid var(--shell-line);
 }
-.profile-text strong { display: block; font-size: 13px; font-weight: 600; color: var(--shell-ink); }
+.profile-text { min-width: 0; margin-right: auto; }
+.profile-text strong { display: block; font-size: 13px; font-weight: 600; color: var(--shell-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .profile-text small { display: block; font-size: 11px; color: var(--shell-muted); }
+
+.logout {
+  display: grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0;
+  border: none; border-radius: var(--r-sm); background: transparent; color: var(--shell-muted);
+  transition: background var(--t) var(--ease), color var(--t) var(--ease);
+}
+.logout:hover { background: var(--shell-2); color: var(--shell-ink); }
 
 /* --- Zona principal ------------------------------------------------------- */
 main { margin-left: 256px; min-height: 100vh; display: flex; flex-direction: column; }

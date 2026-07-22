@@ -40,10 +40,10 @@
   --info: oklch(0.60 0.125 250);   --info-tint: oklch(0.955 0.033 250); --info-ink: oklch(0.46 0.12 253);
 
   /* --- Radios, sombras, tiempos -------------------------------------------- */
-  --r-sm: 8px; --r-md: 11px; --r-lg: 14px; --r-xl: 18px; --r-pill: 999px;
-  --shadow-sm: 0 1px 2px oklch(0.25 0.02 250 / 0.06), 0 1px 1px oklch(0.25 0.02 250 / 0.04);
-  --shadow-md: 0 4px 14px oklch(0.25 0.02 250 / 0.07), 0 1px 3px oklch(0.25 0.02 250 / 0.05);
-  --shadow-lg: 0 18px 40px oklch(0.25 0.03 250 / 0.12);
+  --r-sm: 5px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 999px;
+  --shadow-sm: 0 1px 2px oklch(0.25 0.02 250 / 0.05);
+  --shadow-md: 0 2px 8px oklch(0.25 0.02 250 / 0.06);
+  --shadow-lg: 0 12px 28px oklch(0.25 0.03 250 / 0.14);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);   /* ease-out-quint */
   --t-fast: 130ms; --t: 180ms;
 
@@ -127,14 +127,14 @@ a { color: inherit; }
 .btn--quiet { background: transparent; color: var(--ink-2); }
 .btn--quiet:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
 
-/* --- Badges de estado ----------------------------------------------------- */
+/* --- Badges de estado (etiqueta rectangular, no chip de consumo) ---------- */
 .badge {
   display: inline-flex; align-items: center; gap: 6px;
-  height: 22px; padding: 0 9px;
-  border-radius: var(--r-pill); border: 1px solid transparent;
+  height: 21px; padding: 0 7px;
+  border-radius: var(--r-sm); border: 1px solid transparent;
   font-size: 11px; font-weight: 600; letter-spacing: -0.005em; white-space: nowrap;
 }
-.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.9; }
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.85; flex-shrink: 0; }
 .badge--neutral { background: var(--surface-2); color: var(--ink-2); border-color: var(--line-strong); }
 .badge--ok { background: var(--ok-tint); color: var(--ok-ink); }
 .badge--warn { background: var(--warn-tint); color: var(--warn-ink); }

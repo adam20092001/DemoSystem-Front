@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-login',
-  imports: [RouterLink],
   template: `
     <main class="login">
       <section class="promo">
@@ -17,38 +17,48 @@ import { RouterLink } from '@angular/router';
           <span>IMDIMAQ</span>
         </a>
         <div class="promo-body">
-          <p class="eyebrow">Sistema interno de gestión comercial</p>
-          <h1>Maquinaria, repuestos y equipos<br><em>bajo un solo control.</em></h1>
-          <p class="lead">Catálogo técnico, cotizaciones, ventas e inventario trazable conectados para que tu equipo opere con precisión.</p>
+          <p class="promo-kicker">Sistema interno de gestión comercial</p>
+          <h1>Control operativo para venta e inventario técnico.</h1>
+          <p class="lead">Catálogo técnico, cotizaciones, ventas e inventario trazable en una sola plataforma interna.</p>
         </div>
-        <ul class="promo-stats">
-          <li><strong>10</strong><span>módulos operativos</span></li>
-          <li><strong>4</strong><span>roles de trabajo</span></li>
-          <li><strong>S/</strong><span>moneda única · IGV 18%</span></li>
+        <ul class="module-list">
+          <li>Catálogo y productos</li>
+          <li>Inventario y movimientos</li>
+          <li>Cotizaciones y ventas</li>
+          <li>Pagos y cuentas por cobrar</li>
+          <li>Reportes gerenciales</li>
         </ul>
       </section>
 
       <section class="access">
-        <form (ngSubmit)="$event.preventDefault()">
+        <form (submit)="onSubmit($event, usernameInput.value, passwordInput.value)">
           <p class="eyebrow">Acceso interno</p>
           <h2>Ingresa a tu cuenta</h2>
           <p class="sub">Usa tus credenciales corporativas para continuar.</p>
 
+          @if (error()) {
+            <p class="error-banner" role="alert">{{ error() }}</p>
+          }
+
           <label class="field">
             <span>Usuario o correo</span>
-            <input class="input" value="admin" autocomplete="username">
+            <input #usernameInput class="input" value="admin" autocomplete="username" [disabled]="loading()">
           </label>
           <label class="field">
             <span>Contraseña</span>
-            <input class="input" type="password" value="demoadmin" autocomplete="current-password">
+            <input #passwordInput class="input" type="password" value="demoadmin" autocomplete="current-password" [disabled]="loading()">
           </label>
 
-          <button class="btn btn--primary submit" routerLink="/dashboard" type="button">
-            Ingresar al sistema
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <button class="btn btn--primary submit" type="submit" [disabled]="loading()">
+            @if (loading()) {
+              Ingresando…
+            } @else {
+              Ingresar al sistema
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            }
           </button>
 
-          <p class="hint">Entorno de demostración — cualquier credencial permite continuar.</p>
+          <p class="hint">Entorno de demostración — cualquier usuario y contraseña permite continuar.</p>
         </form>
       </section>
     </main>
@@ -56,4 +66,36 @@ import { RouterLink } from '@angular/router';
   styleUrl: './login.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LoginPage {}
+export class LoginPage {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  protected readonly loading = signal(false);
+  protected readonly error = signal<string | null>(null);
+
+  protected onSubmit(event: Event, username: string, password: string): void {
+    event.preventDefault();
+    this.submit(username, password);
+  }
+
+  private submit(username: string, password: string): void {
+    this.error.set(null);
+
+    if (!username.trim() || !password.trim()) {
+      this.error.set('Ingresa tu usuario y tu contraseña.');
+      return;
+    }
+
+    this.loading.set(true);
+    // Simula la latencia de red; el backend real reemplazará esto por una llamada a /auth/login.
+    setTimeout(() => {
+      const ok = this.auth.login(username, password);
+      this.loading.set(false);
+      if (ok) {
+        this.router.navigateByUrl('/dashboard');
+      } else {
+        this.error.set('No se pudo iniciar sesión. Inténtalo nuevamente.');
+      }
+    }, 350);
+  }
+}

@@ -1,6 +1,9 @@
+import { inject } from '@angular/core';
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { ApiRequestError } from '../errors/api-request.error';
+import { AuthService } from '../auth/auth.service';
 
 interface ErrorPayload {
   errorCode?: unknown;
@@ -9,11 +12,19 @@ interface ErrorPayload {
   traceId?: unknown;
 }
 
-export const apiErrorInterceptor: HttpInterceptorFn = (request, next) =>
-  next(request).pipe(
+export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  return next(request).pipe(
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse)) {
         return throwError(() => error);
+      }
+
+      if (error.status === 401 && auth.isAuthenticated()) {
+        auth.logout();
+        router.navigateByUrl('/login');
       }
 
       const payload = isErrorPayload(error.error) ? error.error : {};
@@ -30,6 +41,7 @@ export const apiErrorInterceptor: HttpInterceptorFn = (request, next) =>
       ));
     }),
   );
+};
 
 function isErrorPayload(value: unknown): value is ErrorPayload {
   return isRecord(value);

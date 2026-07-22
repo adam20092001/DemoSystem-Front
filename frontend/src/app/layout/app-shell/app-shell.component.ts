@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavigationItem, UserRole } from '../../core/models/navigation.model';
@@ -34,6 +34,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 })
 export class AppShellComponent {
   protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
   protected readonly menuOpen = signal(false);
   protected readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'];
@@ -70,5 +71,10 @@ export class AppShellComponent {
 
   protected roleLabel(role: UserRole): string {
     return ROLE_LABELS[role];
+  }
+
+  protected logout(): void {
+    this.auth.logout();
+    this.router.navigateByUrl('/login');
   }
 }

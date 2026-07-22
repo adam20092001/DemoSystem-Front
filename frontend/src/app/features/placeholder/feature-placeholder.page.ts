@@ -18,22 +18,19 @@ import { ActivatedRoute } from '@angular/router';
   `,
   styles: [`
     :host { display: block; }
-    .head h1 { font-size: 27px; font-weight: 800; letter-spacing: -0.025em; margin: 7px 0 5px; }
-    .head .desc { color: var(--muted); font-size: 13.5px; margin: 0; max-width: 60ch; }
+    .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 7px 0 5px; }
+    .head .desc { color: var(--muted); font-size: 13px; margin: 0; max-width: 60ch; }
     .empty {
-      margin-top: 26px; min-height: 380px; padding: 40px 24px;
+      margin-top: 24px; min-height: 360px; padding: 40px 24px;
       display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-      background:
-        radial-gradient(60% 60% at 50% 30%, var(--surface-2), transparent 70%),
-        var(--surface);
     }
     .glyph {
-      width: 60px; height: 60px; display: grid; place-items: center; margin-bottom: 20px;
-      border-radius: var(--r-lg); background: var(--brand-tint); color: var(--brand-ink);
-      font-size: 20px; font-weight: 800; letter-spacing: 0.02em;
+      width: 52px; height: 52px; display: grid; place-items: center; margin-bottom: 18px;
+      border-radius: var(--r-lg); background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-strong);
+      font-size: 16px; font-weight: 700; letter-spacing: 0.02em;
     }
-    .empty h2 { font-size: 19px; font-weight: 700; margin: 8px 0 10px; }
-    .empty-desc { color: var(--muted); font-size: 13.5px; line-height: 1.6; max-width: 46ch; margin: 0; }
+    .empty h2 { font-size: 16px; font-weight: 600; margin: 6px 0 8px; }
+    .empty-desc { color: var(--muted); font-size: 13px; line-height: 1.6; max-width: 46ch; margin: 0; }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,8 +1,7 @@
 <header class="page-head">
   <div>
-    <p class="eyebrow">Panorama de hoy</p>
-    <h1>Buenos días, {{ 'Mariana' }}</h1>
-    <p class="page-sub">Esto es lo más importante de tu operación en este momento.</p>
+    <h1>Buenos días, Mariana</h1>
+    <p class="page-sub">Panorama de la operación al {{ 'día de hoy' }}.</p>
   </div>
   <a routerLink="/pos" class="btn btn--primary">
     <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -13,11 +12,15 @@
 <section class="metrics">
   @for (m of metrics; track m.label) {
     <article class="metric surface">
-      <div class="metric-head">
-        <p>{{ m.label }}</p>
-        <span class="badge" [class]="'badge--' + m.tone">{{ m.delta }}</span>
-      </div>
+      <p class="metric-label">{{ m.label }}</p>
       <strong class="mono">{{ m.value }}</strong>
+      <div class="metric-foot">
+        <span class="metric-delta" [class.is-up]="m.trend === 'up'" [class.is-down]="m.trend === 'down'">
+          @if (m.trend === 'up') { <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg> }
+          @if (m.trend === 'down') { <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg> }
+          {{ m.delta }}
+        </span>
+      </div>
       <small>{{ m.note }}</small>
     </article>
   }
@@ -26,7 +29,7 @@
 <section class="grid">
   <article class="panel chart-panel surface">
     <header class="panel-head">
-      <div><p class="eyebrow">Rendimiento</p><h2>Ventas de la semana</h2></div>
+      <h2>Ventas de la semana</h2>
       <strong class="mono panel-total">{{ weekTotal }}</strong>
     </header>
     <div class="chart">
@@ -40,11 +43,11 @@
   </article>
 
   <article class="panel surface">
-    <header class="panel-head"><div><p class="eyebrow">Pipeline</p><h2>Cotizaciones</h2></div></header>
-    <div class="donut-wrap">
-      <div class="donut" [style.background]="donut.gradient">
-        <span><strong class="mono">{{ donut.total }}</strong><small>en curso</small></span>
-      </div>
+    <header class="panel-head"><h2>Cotizaciones</h2><span class="panel-count mono">{{ pipelineTotal }}</span></header>
+    <div class="stacked-bar">
+      @for (p of pipeline; track p.label) {
+        <span [class]="'seg seg--' + p.tone" [style.width.%]="share(p.count)"></span>
+      }
     </div>
     <ul class="pipeline">
       @for (p of pipeline; track p.label) {
@@ -54,7 +57,7 @@
   </article>
 
   <article class="panel activity surface">
-    <header class="panel-head"><div><p class="eyebrow">Actividad reciente</p><h2>Últimas ventas</h2></div><a routerLink="/sales" class="link">Ver todas</a></header>
+    <header class="panel-head"><h2>Últimas ventas</h2><a routerLink="/sales" class="link">Ver todas</a></header>
     <table>
       <tbody>
         @for (s of activity; track s.code) {
@@ -71,7 +74,7 @@
   </article>
 
   <aside class="panel attention surface">
-    <header class="panel-head"><div><p class="eyebrow">Requiere atención</p><h2>Acciones pendientes</h2></div></header>
+    <header class="panel-head"><h2>Requiere atención</h2></header>
     <ul>
       @for (a of attention; track a.route) {
         <li><a [routerLink]="a.route"><i [class]="'dot dot--' + a.tone"></i><span>{{ a.label }}</span><b>→</b></a></li>

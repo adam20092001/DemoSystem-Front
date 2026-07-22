@@ -5,12 +5,3 @@ dist/
 coverage/
 storage/
 *.log
-
-# Configuración local de asistentes y herramientas descargadas
-.claude/
-.codex/
-.agents/
-frontend/skills-lock.json
-
-# Documento maestro local: no publicar en el repositorio público
-frontend/src/doc/
