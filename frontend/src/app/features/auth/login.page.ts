@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { ApiRequestError } from '../../core/errors/api-request.error';
 
 @Component({
   selector: 'app-login',
@@ -42,11 +44,11 @@ import { AuthService } from '../../core/auth/auth.service';
 
           <label class="field">
             <span>Usuario o correo</span>
-            <input #usernameInput class="input" value="admin" autocomplete="username" [disabled]="loading()">
+            <input #usernameInput class="input" autocomplete="username" [disabled]="loading()" autofocus>
           </label>
           <label class="field">
             <span>Contraseña</span>
-            <input #passwordInput class="input" type="password" value="demoadmin" autocomplete="current-password" [disabled]="loading()">
+            <input #passwordInput class="input" type="password" autocomplete="current-password" [disabled]="loading()">
           </label>
 
           <button class="btn btn--primary submit" type="submit" [disabled]="loading()">
@@ -58,7 +60,7 @@ import { AuthService } from '../../core/auth/auth.service';
             }
           </button>
 
-          <p class="hint">Entorno de demostración — cualquier usuario y contraseña permite continuar.</p>
+          <p class="hint">La sesión se protege mediante una cookie segura administrada por el servidor.</p>
         </form>
       </section>
     </main>
@@ -75,27 +77,30 @@ export class LoginPage {
 
   protected onSubmit(event: Event, username: string, password: string): void {
     event.preventDefault();
-    this.submit(username, password);
-  }
-
-  private submit(username: string, password: string): void {
     this.error.set(null);
 
-    if (!username.trim() || !password.trim()) {
+    if (!username.trim() || !password) {
       this.error.set('Ingresa tu usuario y tu contraseña.');
       return;
     }
 
     this.loading.set(true);
-    // Simula la latencia de red; el backend real reemplazará esto por una llamada a /auth/login.
-    setTimeout(() => {
-      const ok = this.auth.login(username, password);
-      this.loading.set(false);
-      if (ok) {
-        this.router.navigateByUrl('/dashboard');
-      } else {
-        this.error.set('No se pudo iniciar sesión. Inténtalo nuevamente.');
-      }
-    }, 350);
+    this.auth.login(username, password).pipe(
+      take(1),
+      finalize(() => this.loading.set(false)),
+    ).subscribe({
+      next: session => {
+        this.router.navigateByUrl(
+          session.mustChangePassword ? '/change-password' : '/dashboard',
+        );
+      },
+      error: (error: unknown) => {
+        this.error.set(
+          error instanceof ApiRequestError
+            ? error.message
+            : 'No se pudo iniciar sesión. Inténtalo nuevamente.',
+        );
+      },
+    });
   }
 }

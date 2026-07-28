@@ -15,4 +15,4 @@ pnpm install
 pnpm start
 ```
 
-La primera entrega usa datos de demostración locales. La integración con el backend, alojado en otro repositorio, se incorporará módulo por módulo mediante contratos REST.
+La autenticación y la administración de usuarios ya consumen el backend REST real. Los módulos de negocio restantes conservan datos de demostración hasta que sus endpoints estén disponibles.

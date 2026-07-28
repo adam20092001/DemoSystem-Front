@@ -36,14 +36,8 @@
       <button class="menu-button btn btn--quiet" (click)="menuOpen.set(!menuOpen())" aria-label="Abrir menú">☰</button>
       <div class="context">
         <span class="context-title">Almacén General</span>
-        <span class="context-sub">Moneda S/ · IGV 18% · Entorno de demostración</span>
+        <span class="context-sub">Moneda S/ · IGV 18% · API conectada</span>
       </div>
-      <label class="role-switch">
-        <span>Vista demo</span>
-        <select [value]="auth.role()" (change)="auth.setRole($any($event.target).value)">
-          @for (role of roles; track role) { <option [value]="role">{{ roleLabel(role) }}</option> }
-        </select>
-      </label>
     </header>
 
     <section class="page"><router-outlet /></section>

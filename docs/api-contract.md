@@ -25,13 +25,13 @@ Los endpoints de detalle pueden responder directamente con el recurso solicitado
 {
   "data": [],
   "page": 1,
-  "pageSize": 20,
+  "limit": 20,
   "total": 0,
   "totalPages": 0
 }
 ```
 
-Parámetros comunes: `page`, `pageSize`, `sortBy`, `sortOrder` y filtros propios del recurso.
+Parámetros comunes: `page`, `limit` y filtros propios del recurso.
 
 ## Respuesta de error
 

@@ -3,7 +3,7 @@
 ## Decisiones iniciales
 
 - Repositorio dedicado exclusivamente al frontend Angular.
-- Frontend standalone, rutas lazy por feature y estado local simulado durante la demo visual.
+- Frontend standalone y rutas lazy por feature. Autenticación y usuarios consumen la API real; los módulos de negocio aún no implementados mantienen estado local de demostración.
 - Seguridad real y reglas de negocio permanecerán en el backend externo.
 - Contrato previsto: API REST `/api/v1`, autenticación JWT mediante cookie HttpOnly y `withCredentials`.
 

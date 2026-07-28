@@ -1,0 +1,312 @@
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Administración</p>
+    <h1>Usuarios</h1>
+    <p>Gestiona cuentas, roles, accesos y contraseñas temporales.</p>
+  </div>
+  <button class="btn btn--primary" type="button" (click)="openCreate()">
+    <span aria-hidden="true">＋</span>
+    Nuevo usuario
+  </button>
+</header>
+
+@if (notice()) {
+  <div class="notice notice--ok" role="status">
+    <span>{{ notice() }}</span>
+    <button type="button" (click)="notice.set(null)" aria-label="Cerrar mensaje">×</button>
+  </div>
+}
+
+@if (error() && !formMode() && !confirmAction()) {
+  <div class="notice notice--error" role="alert">
+    <span>{{ error() }}</span>
+    <button type="button" (click)="error.set(null)" aria-label="Cerrar error">×</button>
+  </div>
+}
+
+<section class="surface users-panel">
+  <form class="filters" (submit)="applyFilters($event)">
+    <label class="field search-field">
+      <span>Buscar</span>
+      <input
+        class="input"
+        name="search"
+        [(ngModel)]="searchTerm"
+        placeholder="Nombre, usuario o correo"
+        autocomplete="off"
+      >
+    </label>
+
+    <label class="field">
+      <span>Rol</span>
+      <select class="input" name="role" [(ngModel)]="selectedRole">
+        <option value="">Todos los roles</option>
+        @for (role of roles; track role) {
+          <option [value]="role">{{ roleLabel(role) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Estado</span>
+      <select class="input" name="status" [(ngModel)]="selectedStatus">
+        <option value="">Todos los estados</option>
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ statusLabel(status) }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="filter-actions">
+      <button class="btn btn--primary" type="submit" [disabled]="loading()">Aplicar</button>
+      <button class="btn btn--quiet" type="button" (click)="clearFilters()" [disabled]="loading()">Limpiar</button>
+    </div>
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Último acceso</th>
+          <th class="actions-heading">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading() && !result()) {
+          <tr><td colspan="5" class="empty-state">Cargando usuarios…</td></tr>
+        } @else {
+          @for (user of result()?.data ?? []; track user.id) {
+            <tr>
+              <td>
+                <div class="identity">
+                  <span class="avatar">{{ user.firstName[0] }}{{ user.lastName[0] }}</span>
+                  <span>
+                    <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+                    <small>{{ user.username }} · {{ user.email }}</small>
+                  </span>
+                </div>
+              </td>
+              <td>{{ roleLabel(user.role) }}</td>
+              <td>
+                <span class="badge" [class]="statusClass(user.status)">
+                  {{ statusLabel(user.status) }}
+                </span>
+                @if (user.mustChangePassword) {
+                  <small class="pending-password">Cambio pendiente</small>
+                }
+              </td>
+              <td>
+                @if (user.lastLoginAt) {
+                  {{ user.lastLoginAt | date:'dd/MM/yyyy, HH:mm' }}
+                } @else {
+                  <span class="muted">Nunca</span>
+                }
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="action-button" type="button" (click)="openEdit(user)">Editar</button>
+                  <button
+                    class="action-button"
+                    type="button"
+                    [disabled]="user.id === auth.userId()"
+                    [title]="user.id === auth.userId() ? 'No puedes restablecer tu propia contraseña aquí' : 'Restablecer contraseña'"
+                    (click)="askAction('reset', user)"
+                  >Clave</button>
+                  @if (user.status === 'BLOCKED') {
+                    <button class="action-button action-button--ok" type="button" (click)="askAction('unblock', user)">Desbloquear</button>
+                  } @else {
+                    <button
+                      class="action-button action-button--danger"
+                      type="button"
+                      [disabled]="user.id === auth.userId()"
+                      [title]="user.id === auth.userId() ? 'No puedes bloquear tu propia cuenta' : 'Bloquear usuario'"
+                      (click)="askAction('block', user)"
+                    >Bloquear</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty-state">No se encontraron usuarios con estos filtros.</td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pagination">
+    <div class="page-size">
+      <span>Filas</span>
+      <select
+        name="pageSize"
+        [(ngModel)]="pageSize"
+        (ngModelChange)="changePageSize($event)"
+        aria-label="Filas por página"
+      >
+        @for (size of pageSizes; track size) {
+          <option [ngValue]="size">{{ size }}</option>
+        }
+      </select>
+    </div>
+
+    <span class="page-summary">
+      {{ firstRecord() }}–{{ lastRecord() }} de {{ result()?.total ?? 0 }}
+    </span>
+
+    <div class="page-buttons">
+      <button
+        class="btn btn--ghost"
+        type="button"
+        (click)="previousPage()"
+        [disabled]="loading() || (result()?.page ?? 1) <= 1"
+      >Anterior</button>
+      <button
+        class="btn btn--ghost"
+        type="button"
+        (click)="nextPage()"
+        [disabled]="loading() || (result()?.page ?? 1) >= (result()?.totalPages ?? 0)"
+      >Siguiente</button>
+    </div>
+  </footer>
+</section>
+
+@if (formMode()) {
+  <div class="modal-backdrop" (click)="closeForm()">
+    <section class="modal surface" role="dialog" aria-modal="true" aria-labelledby="user-form-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">{{ formMode() === 'create' ? 'Nueva cuenta' : 'Editar cuenta' }}</p>
+          <h2 id="user-form-title">{{ formMode() === 'create' ? 'Crear usuario' : 'Actualizar usuario' }}</h2>
+        </div>
+        <button class="close-button" type="button" (click)="closeForm()" aria-label="Cerrar">×</button>
+      </header>
+
+      @if (error()) {
+        <div class="modal-error" role="alert">{{ error() }}</div>
+      }
+
+      <form class="user-form" (submit)="submitUser($event)">
+        <div class="form-grid">
+          <label class="field">
+            <span>Nombre</span>
+            <input class="input" name="firstName" [(ngModel)]="userForm.firstName" maxlength="80" [disabled]="actionLoading()" required autofocus>
+          </label>
+          <label class="field">
+            <span>Apellido</span>
+            <input class="input" name="lastName" [(ngModel)]="userForm.lastName" maxlength="80" [disabled]="actionLoading()" required>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Usuario</span>
+          <input
+            class="input"
+            name="username"
+            [(ngModel)]="userForm.username"
+            minlength="3"
+            maxlength="50"
+            [disabled]="actionLoading() || formMode() === 'edit'"
+            required
+          >
+          @if (formMode() === 'edit') {
+            <small class="field-help">El nombre de usuario no puede modificarse.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Correo</span>
+          <input class="input" name="email" type="email" [(ngModel)]="userForm.email" maxlength="150" [disabled]="actionLoading()" required>
+        </label>
+
+        <label class="field">
+          <span>Rol</span>
+          <select class="input" name="roleName" [(ngModel)]="userForm.roleName" [disabled]="actionLoading()">
+            @for (role of roles; track role) {
+              <option [value]="role">{{ roleLabel(role) }}</option>
+            }
+          </select>
+        </label>
+
+        @if (formMode() === 'create') {
+          <label class="field">
+            <span>Contraseña temporal</span>
+            <input
+              class="input"
+              name="temporaryPassword"
+              type="password"
+              [(ngModel)]="userForm.temporaryPassword"
+              minlength="12"
+              maxlength="128"
+              autocomplete="new-password"
+              [disabled]="actionLoading()"
+              required
+            >
+            <small class="field-help">Entre 12 y 128 caracteres, con al menos una letra y un número.</small>
+          </label>
+        }
+
+        <footer class="modal-actions">
+          <button class="btn btn--quiet" type="button" (click)="closeForm()" [disabled]="actionLoading()">Cancelar</button>
+          <button class="btn btn--primary" type="submit" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Guardando…' : (formMode() === 'create' ? 'Crear usuario' : 'Guardar cambios') }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
+}
+
+@if (confirmAction(); as action) {
+  <div class="modal-backdrop" (click)="closeConfirmation()">
+    <section class="modal modal--small surface" role="dialog" aria-modal="true" aria-labelledby="confirm-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Confirmación</p>
+          <h2 id="confirm-title">{{ confirmTitle(action) }}</h2>
+        </div>
+        <button class="close-button" type="button" (click)="closeConfirmation()" aria-label="Cerrar">×</button>
+      </header>
+      <p class="confirmation-copy">{{ confirmDescription(action) }}</p>
+      <footer class="modal-actions">
+        <button class="btn btn--quiet" type="button" (click)="closeConfirmation()" [disabled]="actionLoading()">Cancelar</button>
+        <button
+          class="btn"
+          [class.btn--danger]="action.kind === 'block'"
+          [class.btn--primary]="action.kind !== 'block'"
+          type="button"
+          (click)="runConfirmedAction()"
+          [disabled]="actionLoading()"
+        >{{ actionLoading() ? 'Procesando…' : 'Confirmar' }}</button>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (resetResult(); as credentials) {
+  <div class="modal-backdrop">
+    <section class="modal modal--small surface" role="dialog" aria-modal="true" aria-labelledby="password-result-title">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Contraseña restablecida</p>
+          <h2 id="password-result-title">Entrega esta clave una sola vez</h2>
+        </div>
+      </header>
+      <p class="confirmation-copy">
+        La siguiente contraseña temporal pertenece a <strong>{{ credentials.user.username }}</strong>.
+        El sistema no volverá a mostrarla.
+      </p>
+      <div class="temporary-password">
+        <code>{{ credentials.temporaryPassword }}</code>
+        <button class="btn btn--ghost" type="button" (click)="copyTemporaryPassword()">
+          {{ copied() ? 'Copiada' : 'Copiar' }}
+        </button>
+      </div>
+      <footer class="modal-actions">
+        <button class="btn btn--primary" type="button" (click)="closeResetResult()">Entendido</button>
+      </footer>
+    </section>
+  </div>
+}

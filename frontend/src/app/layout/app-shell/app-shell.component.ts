@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavigationItem, UserRole } from '../../core/models/navigation.model';
 
@@ -37,7 +38,7 @@ export class AppShellComponent {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
   protected readonly menuOpen = signal(false);
-  protected readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'];
+  private readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'];
 
   protected readonly nav: NavigationItem[] = [
     { label: 'Resumen', route: '/dashboard', icon: 'grid', roles: this.roles },
@@ -49,6 +50,7 @@ export class AppShellComponent {
     { label: 'Ventas', route: '/sales', icon: 'receipt', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Pagos', route: '/payments', icon: 'wallet', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Reportes', route: '/reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT'] },
+    { label: 'Usuarios', route: '/users', icon: 'users', roles: ['ADMIN'] },
     { label: 'Configuración', route: '/settings', icon: 'settings', roles: ['ADMIN'] },
   ];
 
@@ -74,7 +76,9 @@ export class AppShellComponent {
   }
 
   protected logout(): void {
-    this.auth.logout();
-    this.router.navigateByUrl('/login');
+    this.auth.logout().pipe(take(1)).subscribe({
+      next: () => this.router.navigateByUrl('/login'),
+      error: () => this.router.navigateByUrl('/login'),
+    });
   }
 }
