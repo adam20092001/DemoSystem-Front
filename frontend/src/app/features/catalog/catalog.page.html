@@ -1,0 +1,393 @@
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Catálogo</p>
+    <h1>Productos y servicios</h1>
+    <p>Administra el catálogo comercial, sus categorías, unidades, especificaciones e imágenes.</p>
+  </div>
+  @if (canManage()) {
+    <button class="btn btn--primary" type="button" (click)="activeTab() === 'products' ? openCreateProduct() : activeTab() === 'categories' ? openCreateCategory() : openCreateUnit()">
+      <span aria-hidden="true">＋</span>
+      {{ activeTab() === 'products' ? 'Nuevo producto' : activeTab() === 'categories' ? 'Nueva categoría' : 'Nueva unidad' }}
+    </button>
+  }
+</header>
+
+<nav class="catalog-tabs" aria-label="Secciones del catálogo">
+  <button type="button" [class.active]="activeTab() === 'products'" (click)="switchTab('products')">
+    Productos <span>{{ products()?.total ?? 0 }}</span>
+  </button>
+  <button type="button" [class.active]="activeTab() === 'categories'" (click)="switchTab('categories')">
+    Categorías <span>{{ categories()?.total ?? 0 }}</span>
+  </button>
+  <button type="button" [class.active]="activeTab() === 'units'" (click)="switchTab('units')">
+    Unidades <span>{{ units()?.total ?? 0 }}</span>
+  </button>
+</nav>
+
+@if (notice()) {
+  <div class="notice notice--ok" role="status">
+    <span>{{ notice() }}</span>
+    <button type="button" (click)="notice.set(null)" aria-label="Cerrar mensaje">×</button>
+  </div>
+}
+
+@if (error() && !productFormMode() && !categoryFormMode() && !unitFormMode() && !selectedProduct()) {
+  <div class="notice notice--error" role="alert">
+    <span>{{ error() }}</span>
+    <button type="button" (click)="error.set(null)" aria-label="Cerrar error">×</button>
+  </div>
+}
+
+@if (activeTab() === 'products') {
+  <section class="surface catalog-panel">
+    <form class="filters filters--products" (submit)="applyProductFilters($event)">
+      <label class="field search-field">
+        <span>Buscar</span>
+        <input class="input" name="productSearch" [(ngModel)]="productSearch" placeholder="SKU, producto o marca" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Categoría</span>
+        <select class="input" name="productCategory" [(ngModel)]="productCategory">
+          <option value="">Todas</option>
+          @for (category of categoryOptions(); track category.id) {
+            <option [value]="category.id">{{ category.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span>Tipo</span>
+        <select class="input" name="productType" [(ngModel)]="productType">
+          <option value="">Todos</option>
+          <option value="PRODUCT">Producto</option>
+          <option value="SERVICE">Servicio</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Estado</span>
+        <select class="input" name="productStatus" [(ngModel)]="productStatus">
+          <option value="">Todos</option>
+          <option value="ACTIVE">Activos</option>
+          <option value="INACTIVE">Inactivos</option>
+        </select>
+      </label>
+      <details class="more-filters">
+        <summary>Más filtros</summary>
+        <div>
+          <label class="field">
+            <span>Unidad</span>
+            <select class="input" name="productUnit" [(ngModel)]="productUnit">
+              <option value="">Todas</option>
+              @for (unit of unitOptions(); track unit.id) {
+                <option [value]="unit.id">{{ unit.name }} ({{ unit.abbreviation }})</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Control de inventario</span>
+            <select class="input" name="productInventory" [(ngModel)]="productInventory">
+              <option value="">Todos</option>
+              <option value="true">Controla stock</option>
+              <option value="false">Sin control de stock</option>
+            </select>
+          </label>
+        </div>
+      </details>
+      <div class="filter-actions">
+        <button class="btn btn--primary" type="submit" [disabled]="loadingProducts()">Aplicar</button>
+        <button class="btn btn--quiet" type="button" (click)="clearProductFilters()" [disabled]="loadingProducts()">Limpiar</button>
+      </div>
+    </form>
+
+    <div class="table-wrap">
+      <table class="products-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Estado</th>
+            <th class="actions-heading">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loadingProducts() && !products()) {
+            <tr><td colspan="6" class="empty-state">Cargando productos…</td></tr>
+          } @else {
+            @for (product of products()?.data ?? []; track product.id) {
+              <tr>
+                <td>
+                  <div class="product-identity">
+                    <button class="product-thumb" type="button" (click)="openProductDetail(product)" [attr.aria-label]="'Ver ' + product.name">
+                      @if (product.primaryImage) {
+                        <img [src]="catalog.imageUrl(product.primaryImage.fileUrl)" [alt]="product.name">
+                      } @else {
+                        <span aria-hidden="true">◇</span>
+                      }
+                    </button>
+                    <span>
+                      <button class="text-link" type="button" (click)="openProductDetail(product)">{{ product.name }}</button>
+                      <small><span class="mono">{{ product.sku }}</span> · {{ product.brand || typeLabel(product.productType) }}</small>
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <strong class="cell-title">{{ product.category.name }}</strong>
+                  <small class="cell-note">{{ product.unit.name }} · {{ product.unit.abbreviation }}</small>
+                </td>
+                <td class="price mono">{{ money(product.salePrice) }}</td>
+                <td>
+                  @if (product.isInventoryTracked) {
+                    <strong class="cell-title mono">{{ product.stockCurrent }} {{ product.unit.abbreviation }}</strong>
+                    <small class="cell-note">Mínimo {{ product.stockMinimum }}</small>
+                  } @else {
+                    <span class="muted">No controla</span>
+                  }
+                </td>
+                <td><span class="badge" [class]="statusClass(product.status)">{{ statusLabel(product.status) }}</span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="action-button" type="button" (click)="openProductDetail(product)">Ver</button>
+                    @if (canManage()) {
+                      <button class="action-button" type="button" (click)="openEditProduct(product)" [disabled]="loadingDetail()">Editar</button>
+                      <button
+                        class="action-button"
+                        [class.action-button--danger]="product.status === 'ACTIVE'"
+                        [class.action-button--ok]="product.status === 'INACTIVE'"
+                        type="button"
+                        (click)="toggleProductStatus(product)"
+                        [disabled]="actionLoading()"
+                      >{{ product.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="empty-state">No se encontraron productos con estos filtros.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pagination">
+      <div class="page-size">
+        <span>Filas</span>
+        <select name="productPageSize" [(ngModel)]="productPageSize" (ngModelChange)="loadProducts(1)" aria-label="Productos por página">
+          @for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }
+        </select>
+      </div>
+      <span class="page-summary">{{ firstRecord(products()) }}–{{ lastRecord(products()) }} de {{ products()?.total ?? 0 }}</span>
+      <div class="page-buttons">
+        <button class="btn btn--ghost" type="button" (click)="previousProductPage()" [disabled]="loadingProducts() || (products()?.page ?? 1) <= 1">Anterior</button>
+        <button class="btn btn--ghost" type="button" (click)="nextProductPage()" [disabled]="loadingProducts() || (products()?.page ?? 1) >= (products()?.totalPages ?? 0)">Siguiente</button>
+      </div>
+    </footer>
+  </section>
+}
+
+@if (activeTab() === 'categories') {
+  <section class="surface catalog-panel">
+    <form class="filters filters--compact" (submit)="applyCategoryFilters($event)">
+      <label class="field search-field">
+        <span>Buscar</span>
+        <input class="input" name="categorySearch" [(ngModel)]="categorySearch" placeholder="Código o nombre" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Estado</span>
+        <select class="input" name="categoryStatus" [(ngModel)]="categoryStatus">
+          <option value="">Todos</option>
+          <option value="ACTIVE">Activos</option>
+          <option value="INACTIVE">Inactivos</option>
+        </select>
+      </label>
+      <div class="filter-actions">
+        <button class="btn btn--primary" type="submit" [disabled]="loadingCategories()">Aplicar</button>
+        <button class="btn btn--quiet" type="button" (click)="clearCategoryFilters()">Limpiar</button>
+      </div>
+    </form>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Categoría</th><th>Jerarquía</th><th>Orden</th><th>Estado</th><th class="actions-heading">Acciones</th></tr></thead>
+        <tbody>
+          @if (loadingCategories() && !categories()) {
+            <tr><td colspan="5" class="empty-state">Cargando categorías…</td></tr>
+          } @else {
+            @for (category of categories()?.data ?? []; track category.id) {
+              <tr>
+                <td><strong class="cell-title">{{ category.name }}</strong><small class="cell-note mono">{{ category.code }}</small></td>
+                <td><span>{{ categoryName(category.parentId) }}</span><small class="cell-note">{{ category.description || 'Sin descripción' }}</small></td>
+                <td class="mono">{{ category.sortOrder }}</td>
+                <td><span class="badge" [class]="statusClass(category.status)">{{ statusLabel(category.status) }}</span></td>
+                <td>
+                  <div class="row-actions">
+                    @if (canManage()) {
+                      <button class="action-button" type="button" (click)="openEditCategory(category)">Editar</button>
+                      <button class="action-button" [class.action-button--danger]="category.status === 'ACTIVE'" [class.action-button--ok]="category.status === 'INACTIVE'" type="button" (click)="toggleCategoryStatus(category)">{{ category.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}</button>
+                    } @else { <span class="muted">Solo lectura</span> }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="empty-state">No se encontraron categorías.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer class="pagination">
+      <div class="page-size"><span>Filas</span><select name="categoryPageSize" [(ngModel)]="categoryPageSize" (ngModelChange)="loadCategories(1)">@for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }</select></div>
+      <span class="page-summary">{{ firstRecord(categories()) }}–{{ lastRecord(categories()) }} de {{ categories()?.total ?? 0 }}</span>
+      <div class="page-buttons"><button class="btn btn--ghost" type="button" (click)="previousCategoryPage()" [disabled]="loadingCategories() || (categories()?.page ?? 1) <= 1">Anterior</button><button class="btn btn--ghost" type="button" (click)="nextCategoryPage()" [disabled]="loadingCategories() || (categories()?.page ?? 1) >= (categories()?.totalPages ?? 0)">Siguiente</button></div>
+    </footer>
+  </section>
+}
+
+@if (activeTab() === 'units') {
+  <section class="surface catalog-panel">
+    <form class="filters filters--units" (submit)="applyUnitFilters($event)">
+      <label class="field search-field"><span>Buscar</span><input class="input" name="unitSearch" [(ngModel)]="unitSearch" placeholder="Código, nombre o abreviatura" autocomplete="off"></label>
+      <label class="field"><span>Decimales</span><select class="input" name="unitDecimals" [(ngModel)]="unitDecimals"><option value="">Todas</option><option value="true">Permitidos</option><option value="false">No permitidos</option></select></label>
+      <label class="field"><span>Estado</span><select class="input" name="unitStatus" [(ngModel)]="unitStatus"><option value="">Todos</option><option value="ACTIVE">Activos</option><option value="INACTIVE">Inactivos</option></select></label>
+      <div class="filter-actions"><button class="btn btn--primary" type="submit" [disabled]="loadingUnits()">Aplicar</button><button class="btn btn--quiet" type="button" (click)="clearUnitFilters()">Limpiar</button></div>
+    </form>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Unidad</th><th>Abreviatura</th><th>Cantidades</th><th>Estado</th><th class="actions-heading">Acciones</th></tr></thead>
+        <tbody>
+          @if (loadingUnits() && !units()) {
+            <tr><td colspan="5" class="empty-state">Cargando unidades…</td></tr>
+          } @else {
+            @for (unit of units()?.data ?? []; track unit.id) {
+              <tr>
+                <td><strong class="cell-title">{{ unit.name }}</strong><small class="cell-note mono">{{ unit.code }}</small></td>
+                <td><span class="unit-symbol mono">{{ unit.abbreviation }}</span></td>
+                <td>{{ unit.allowDecimal ? 'Permite decimales' : 'Solo enteros' }}</td>
+                <td><span class="badge" [class]="statusClass(unit.status)">{{ statusLabel(unit.status) }}</span></td>
+                <td><div class="row-actions">@if (canManage()) {<button class="action-button" type="button" (click)="openEditUnit(unit)">Editar</button><button class="action-button" [class.action-button--danger]="unit.status === 'ACTIVE'" [class.action-button--ok]="unit.status === 'INACTIVE'" type="button" (click)="toggleUnitStatus(unit)">{{ unit.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}</button>} @else {<span class="muted">Solo lectura</span>}</div></td>
+              </tr>
+            } @empty { <tr><td colspan="5" class="empty-state">No se encontraron unidades.</td></tr> }
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer class="pagination">
+      <div class="page-size"><span>Filas</span><select name="unitPageSize" [(ngModel)]="unitPageSize" (ngModelChange)="loadUnits(1)">@for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }</select></div>
+      <span class="page-summary">{{ firstRecord(units()) }}–{{ lastRecord(units()) }} de {{ units()?.total ?? 0 }}</span>
+      <div class="page-buttons"><button class="btn btn--ghost" type="button" (click)="previousUnitPage()" [disabled]="loadingUnits() || (units()?.page ?? 1) <= 1">Anterior</button><button class="btn btn--ghost" type="button" (click)="nextUnitPage()" [disabled]="loadingUnits() || (units()?.page ?? 1) >= (units()?.totalPages ?? 0)">Siguiente</button></div>
+    </footer>
+  </section>
+}
+
+@if (productFormMode()) {
+  <div class="modal-backdrop" (click)="closeProductForm()">
+    <section class="modal modal--wide surface" role="dialog" aria-modal="true" aria-labelledby="product-form-title" (click)="$event.stopPropagation()">
+      <header class="modal-header"><div><p class="eyebrow">{{ productFormMode() === 'create' ? 'Nuevo registro' : 'Editar registro' }}</p><h2 id="product-form-title">{{ productFormMode() === 'create' ? 'Crear producto o servicio' : 'Actualizar producto o servicio' }}</h2></div><button class="close-button" type="button" (click)="closeProductForm()" aria-label="Cerrar">×</button></header>
+      @if (error()) { <div class="modal-error" role="alert">{{ error() }}</div> }
+      <form class="entity-form" (submit)="submitProduct($event)">
+        <div class="form-grid">
+          <label class="field"><span>SKU *</span><input class="input mono" name="sku" [(ngModel)]="productForm.sku" maxlength="40" required autofocus></label>
+          <label class="field"><span>Tipo *</span><select class="input" name="productTypeForm" [(ngModel)]="productForm.productType" (ngModelChange)="productTypeChanged()"><option value="PRODUCT">Producto</option><option value="SERVICE">Servicio</option></select></label>
+        </div>
+        <label class="field"><span>Nombre *</span><input class="input" name="productName" [(ngModel)]="productForm.name" maxlength="150" required></label>
+        <div class="form-grid form-grid--three">
+          <label class="field"><span>Marca</span><input class="input" name="brand" [(ngModel)]="productForm.brand" maxlength="80"></label>
+          <label class="field"><span>Precio de venta *</span><input class="input mono" name="salePrice" [(ngModel)]="productForm.salePrice" inputmode="decimal" placeholder="0.00" required></label>
+          <label class="field"><span>Stock mínimo</span><input class="input mono" name="stockMinimum" [(ngModel)]="productForm.stockMinimum" inputmode="decimal" [disabled]="productForm.productType === 'SERVICE'"></label>
+        </div>
+        <div class="form-grid">
+          <label class="field"><span>Categoría *</span><select class="input" name="categoryId" [(ngModel)]="productForm.categoryId" required><option value="" disabled>Selecciona una categoría</option>@for (category of categoryOptions(); track category.id) {<option [value]="category.id" [disabled]="category.status === 'INACTIVE' && category.id !== productForm.categoryId">{{ category.name }}{{ category.status === 'INACTIVE' ? ' (inactiva)' : '' }}</option>}</select></label>
+          <label class="field"><span>Unidad *</span><select class="input" name="unitId" [(ngModel)]="productForm.unitId" required><option value="" disabled>Selecciona una unidad</option>@for (unit of unitOptions(); track unit.id) {<option [value]="unit.id" [disabled]="unit.status === 'INACTIVE' && unit.id !== productForm.unitId">{{ unit.name }} ({{ unit.abbreviation }}){{ unit.status === 'INACTIVE' ? ' · inactiva' : '' }}</option>}</select></label>
+        </div>
+        @if (productForm.productType === 'PRODUCT') {
+          <label class="check-field"><input type="checkbox" name="inventoryTracked" [(ngModel)]="productForm.isInventoryTracked"><span><strong>Controlar inventario</strong><small>El producto participará en operaciones y alertas de stock.</small></span></label>
+        }
+        <div class="form-grid">
+          <label class="field"><span>Descripción comercial</span><textarea class="input textarea" name="commercialDescription" [(ngModel)]="productForm.commercialDescription" maxlength="1000" rows="4"></textarea></label>
+          <label class="field"><span>Notas internas</span><textarea class="input textarea" name="internalNotes" [(ngModel)]="productForm.internalNotes" maxlength="1000" rows="4"></textarea></label>
+        </div>
+        <div class="modal-actions"><button class="btn btn--quiet" type="button" (click)="closeProductForm()" [disabled]="actionLoading()">Cancelar</button><button class="btn btn--primary" type="submit" [disabled]="actionLoading()">{{ actionLoading() ? 'Guardando…' : productFormMode() === 'create' ? 'Crear producto' : 'Guardar cambios' }}</button></div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (categoryFormMode()) {
+  <div class="modal-backdrop" (click)="closeCategoryForm()">
+    <section class="modal surface" role="dialog" aria-modal="true" aria-labelledby="category-form-title" (click)="$event.stopPropagation()">
+      <header class="modal-header"><div><p class="eyebrow">Catálogo</p><h2 id="category-form-title">{{ categoryFormMode() === 'create' ? 'Nueva categoría' : 'Editar categoría' }}</h2></div><button class="close-button" type="button" (click)="closeCategoryForm()">×</button></header>
+      @if (error()) { <div class="modal-error" role="alert">{{ error() }}</div> }
+      <form class="entity-form" (submit)="submitCategory($event)">
+        <div class="form-grid"><label class="field"><span>Código *</span><input class="input mono" name="categoryCode" [(ngModel)]="categoryForm.code" maxlength="30" required autofocus></label><label class="field"><span>Orden</span><input class="input" type="number" min="0" max="1000" name="categorySort" [(ngModel)]="categoryForm.sortOrder"></label></div>
+        <label class="field"><span>Nombre *</span><input class="input" name="categoryName" [(ngModel)]="categoryForm.name" maxlength="120" required></label>
+        <label class="field"><span>Categoría padre</span><select class="input" name="categoryParent" [(ngModel)]="categoryForm.parentId"><option value="">Sin categoría padre</option>@for (category of categoryOptions(); track category.id) {@if (category.id !== editingCategoryId()) {<option [value]="category.id" [disabled]="category.status === 'INACTIVE'">{{ category.name }}</option>}}</select></label>
+        <label class="field"><span>Descripción</span><textarea class="input textarea" name="categoryDescription" [(ngModel)]="categoryForm.description" maxlength="500" rows="4"></textarea></label>
+        <div class="modal-actions"><button class="btn btn--quiet" type="button" (click)="closeCategoryForm()">Cancelar</button><button class="btn btn--primary" type="submit" [disabled]="actionLoading()">{{ actionLoading() ? 'Guardando…' : 'Guardar categoría' }}</button></div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (unitFormMode()) {
+  <div class="modal-backdrop" (click)="closeUnitForm()">
+    <section class="modal surface" role="dialog" aria-modal="true" aria-labelledby="unit-form-title" (click)="$event.stopPropagation()">
+      <header class="modal-header"><div><p class="eyebrow">Catálogo</p><h2 id="unit-form-title">{{ unitFormMode() === 'create' ? 'Nueva unidad' : 'Editar unidad' }}</h2></div><button class="close-button" type="button" (click)="closeUnitForm()">×</button></header>
+      @if (error()) { <div class="modal-error" role="alert">{{ error() }}</div> }
+      <form class="entity-form" (submit)="submitUnit($event)">
+        <div class="form-grid"><label class="field"><span>Código *</span><input class="input mono" name="unitCode" [(ngModel)]="unitForm.code" maxlength="15" required autofocus></label><label class="field"><span>Abreviatura *</span><input class="input mono" name="unitAbbreviation" [(ngModel)]="unitForm.abbreviation" maxlength="10" required></label></div>
+        <label class="field"><span>Nombre *</span><input class="input" name="unitName" [(ngModel)]="unitForm.name" maxlength="60" required></label>
+        <label class="check-field"><input type="checkbox" name="allowDecimal" [(ngModel)]="unitForm.allowDecimal"><span><strong>Permitir cantidades decimales</strong><small>Úsalo para metros, kilogramos, litros y otras medidas continuas.</small></span></label>
+        <div class="modal-actions"><button class="btn btn--quiet" type="button" (click)="closeUnitForm()">Cancelar</button><button class="btn btn--primary" type="submit" [disabled]="actionLoading()">{{ actionLoading() ? 'Guardando…' : 'Guardar unidad' }}</button></div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (selectedProduct(); as product) {
+  <div class="modal-backdrop modal-backdrop--drawer" (click)="closeProductDetail()">
+    <section class="product-detail surface" role="dialog" aria-modal="true" aria-labelledby="product-detail-title" (click)="$event.stopPropagation()">
+      <header class="detail-header">
+        <div><p class="eyebrow">{{ typeLabel(product.productType) }} · <span class="mono">{{ product.sku }}</span></p><h2 id="product-detail-title">{{ product.name }}</h2><p>{{ product.brand || 'Sin marca' }} · {{ product.category.name }}</p></div>
+        <div class="detail-header-actions">@if (canManage()) {<button class="btn btn--ghost" type="button" (click)="openEditProduct(product)">Editar</button>}<button class="close-button" type="button" (click)="closeProductDetail()" aria-label="Cerrar">×</button></div>
+      </header>
+      @if (error()) { <div class="modal-error" role="alert">{{ error() }}</div> }
+      <div class="detail-summary">
+        <div><span>Precio</span><strong class="mono">{{ money(product.salePrice) }}</strong></div>
+        <div><span>Estado</span><strong><span class="badge" [class]="statusClass(product.status)">{{ statusLabel(product.status) }}</span></strong></div>
+        <div><span>Unidad</span><strong>{{ product.unit.name }} ({{ product.unit.abbreviation }})</strong></div>
+        <div><span>Stock</span><strong class="mono">{{ product.isInventoryTracked ? product.stockCurrent + ' / mín. ' + product.stockMinimum : 'No controla' }}</strong></div>
+      </div>
+      @if (product.commercialDescription || product.internalNotes) {
+        <section class="detail-section copy-grid">
+          @if (product.commercialDescription) {<div><h3>Descripción comercial</h3><p>{{ product.commercialDescription }}</p></div>}
+          @if (product.internalNotes) {<div><h3>Notas internas</h3><p>{{ product.internalNotes }}</p></div>}
+        </section>
+      }
+      <section class="detail-section">
+        <div class="section-heading"><div><h3>Especificaciones técnicas</h3><p>{{ product.specifications.length }} registradas</p></div>@if (canManage()) {<button class="btn btn--ghost btn--small" type="button" (click)="openCreateSpecification()">＋ Agregar</button>}</div>
+        @if (specificationFormMode()) {
+          <form class="inline-form" (submit)="submitSpecification($event)">
+            <label class="field"><span>Nombre</span><input class="input" name="specName" [(ngModel)]="specificationForm.name" maxlength="80" required></label>
+            <label class="field"><span>Valor</span><input class="input" name="specValue" [(ngModel)]="specificationForm.value" maxlength="300" required></label>
+            <label class="field"><span>Unidad</span><input class="input" name="specUnit" [(ngModel)]="specificationForm.unit" maxlength="20"></label>
+            <label class="field field--order"><span>Orden</span><input class="input" type="number" name="specOrder" [(ngModel)]="specificationForm.sortOrder"></label>
+            <div class="inline-actions"><button class="btn btn--quiet btn--small" type="button" (click)="closeSpecificationForm()">Cancelar</button><button class="btn btn--primary btn--small" type="submit" [disabled]="actionLoading()">Guardar</button></div>
+          </form>
+        }
+        <div class="spec-list">
+          @for (specification of product.specifications; track specification.id) {
+            <div class="spec-row"><span>{{ specification.name }}</span><strong>{{ specification.value }}{{ specification.unit ? ' ' + specification.unit : '' }}</strong>@if (canManage()) {<div><button class="icon-action" type="button" (click)="openEditSpecification(specification)" title="Editar">Editar</button><button class="icon-action icon-action--danger" type="button" (click)="deleteSpecification(specification)" title="Eliminar">Eliminar</button></div>}</div>
+          } @empty { <div class="mini-empty">Todavía no hay especificaciones técnicas.</div> }
+        </div>
+      </section>
+      <section class="detail-section">
+        <div class="section-heading"><div><h3>Imágenes</h3><p>JPEG, PNG o WebP · máximo 5 MB</p></div>@if (canManage()) {<label class="btn btn--ghost btn--small file-button"><input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadImage($event)" [disabled]="actionLoading()">＋ Subir imagen</label>}</div>
+        <div class="image-grid">
+          @for (image of product.images; track image.id) {
+            <figure class="image-card" [class.image-card--primary]="image.isPrimary"><img [src]="catalog.imageUrl(image.fileUrl)" [alt]="product.name"><figcaption><span>{{ fileSize(image.fileSize) }} @if (image.isPrimary) { · Principal }</span>@if (canManage()) {<div>@if (!image.isPrimary) {<button type="button" (click)="setPrimaryImage(image.id)">Hacer principal</button>}<button class="danger-link" type="button" (click)="deleteImage(image.id)">Eliminar</button></div>}</figcaption></figure>
+          } @empty { <div class="mini-empty mini-empty--image">Este producto todavía no tiene imágenes.</div> }
+        </div>
+      </section>
+    </section>
+  </div>
+}
