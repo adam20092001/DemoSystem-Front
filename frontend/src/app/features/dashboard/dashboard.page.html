@@ -1,84 +1,71 @@
 <header class="page-head">
   <div>
-    <h1>Buenos días, Mariana</h1>
-    <p class="page-sub">Panorama de la operación al {{ 'día de hoy' }}.</p>
+    <p class="eyebrow">Resumen</p>
+    <h1>Hola, {{ auth.userName() }}</h1>
+    <p class="page-sub">Consulta el estado general de tus productos y servicios.</p>
   </div>
-  <a routerLink="/pos" class="btn btn--primary">
-    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-    Nueva venta
-  </a>
+  <a routerLink="/products" class="btn btn--primary">Abrir catálogo</a>
 </header>
 
-<section class="metrics">
-  @for (m of metrics; track m.label) {
-    <article class="metric surface">
-      <p class="metric-label">{{ m.label }}</p>
-      <strong class="mono">{{ m.value }}</strong>
-      <div class="metric-foot">
-        <span class="metric-delta" [class.is-up]="m.trend === 'up'" [class.is-down]="m.trend === 'down'">
-          @if (m.trend === 'up') { <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg> }
-          @if (m.trend === 'down') { <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg> }
-          {{ m.delta }}
-        </span>
-      </div>
-      <small>{{ m.note }}</small>
-    </article>
+@if (error()) {
+  <div class="notice notice--error" role="alert">
+    <span>{{ error() }}</span>
+    <button class="btn btn--ghost" type="button" (click)="reload()" [disabled]="loading()">Reintentar</button>
+  </div>
+}
+
+<section class="metrics" aria-label="Resumen del catálogo">
+  @if (loading() && metrics().length === 0) {
+    @for (item of [1, 2, 3, 4]; track item) {
+      <article class="metric metric--loading surface">
+        <span></span><strong>—</strong>
+      </article>
+    }
+  } @else {
+    @for (metric of metrics(); track metric.label) {
+      <a class="metric surface" [routerLink]="metric.route">
+        <p>{{ metric.label }}</p>
+        <strong class="mono">{{ metric.value }}</strong>
+        <small>Información actualizada</small>
+      </a>
+    }
   }
 </section>
 
-<section class="grid">
-  <article class="panel chart-panel surface">
+<section class="dashboard-grid">
+  <article class="panel surface">
     <header class="panel-head">
-      <h2>Ventas de la semana</h2>
-      <strong class="mono panel-total">{{ weekTotal }}</strong>
+      <div>
+        <p class="eyebrow">Estado general</p>
+        <h2>Disponibilidad</h2>
+      </div>
+      <button class="btn btn--ghost btn--small" type="button" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Actualizando…' : 'Actualizar' }}
+      </button>
     </header>
-    <div class="chart">
-      @for (b of week; track b.day) {
-        <div class="bar-col">
-          <div class="bar" [style.height.%]="b.pct"></div>
-          <small>{{ b.day }}</small>
-        </div>
-      }
-    </div>
+
+    <dl class="health-list">
+      <div>
+        <dt>Acceso</dt>
+        <dd><span class="status-dot" [class.status-dot--ok]="health()?.application === 'up'"></span>{{ healthLabel(health()?.application) }}</dd>
+      </div>
+      <div>
+        <dt>Información</dt>
+        <dd><span class="status-dot" [class.status-dot--ok]="health()?.database === 'up'"></span>{{ healthLabel(health()?.database) }}</dd>
+      </div>
+      <div>
+        <dt>Última actualización</dt>
+        <dd class="mono">{{ health()?.timestamp ? (health()?.timestamp | date:'dd/MM/yyyy, HH:mm:ss') : 'Pendiente' }}</dd>
+      </div>
+    </dl>
   </article>
 
   <article class="panel surface">
-    <header class="panel-head"><h2>Cotizaciones</h2><span class="panel-count mono">{{ pipelineTotal }}</span></header>
-    <div class="stacked-bar">
-      @for (p of pipeline; track p.label) {
-        <span [class]="'seg seg--' + p.tone" [style.width.%]="share(p.count)"></span>
-      }
-    </div>
-    <ul class="pipeline">
-      @for (p of pipeline; track p.label) {
-        <li><i [class]="'dot dot--' + p.tone"></i>{{ p.label }}<b class="mono">{{ p.count }}</b></li>
-      }
-    </ul>
+    <p class="eyebrow">Funciones disponibles</p>
+    <h2>Catálogo e inventario listos</h2>
+    <p class="availability-copy">
+      Ya puedes administrar productos, categorías, unidades y movimientos de inventario.
+      Las demás funciones se habilitarán progresivamente.
+    </p>
   </article>
-
-  <article class="panel activity surface">
-    <header class="panel-head"><h2>Últimas ventas</h2><a routerLink="/sales" class="link">Ver todas</a></header>
-    <table>
-      <tbody>
-        @for (s of activity; track s.code) {
-          <tr>
-            <td class="mono code">{{ s.code }}</td>
-            <td class="client">{{ s.client }}</td>
-            <td class="mono time">{{ s.time }}</td>
-            <td class="mono amount">{{ s.amount }}</td>
-            <td><span class="badge" [class]="'badge--' + s.tone">{{ s.status }}</span></td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </article>
-
-  <aside class="panel attention surface">
-    <header class="panel-head"><h2>Requiere atención</h2></header>
-    <ul>
-      @for (a of attention; track a.route) {
-        <li><a [routerLink]="a.route"><i [class]="'dot dot--' + a.tone"></i><span>{{ a.label }}</span><b>→</b></a></li>
-      }
-    </ul>
-  </aside>
 </section>

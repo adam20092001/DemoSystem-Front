@@ -1,0 +1,372 @@
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Operaciones</p>
+    <h1>Inventario</h1>
+    <p>Consulta existencias, registra entradas y salidas, y controla el stock mínimo.</p>
+  </div>
+  @if (canWrite()) {
+    <button class="btn btn--primary" type="button" (click)="openMovementForm()">
+      <span aria-hidden="true">＋</span>
+      Registrar movimiento
+    </button>
+  }
+</header>
+
+@if (notice()) {
+  <div class="notice notice--ok" role="status">
+    <span>{{ notice() }}</span>
+    <button type="button" aria-label="Cerrar mensaje" (click)="notice.set(null)">×</button>
+  </div>
+}
+
+@if (error()) {
+  <div class="notice notice--error" role="alert">
+    <span>{{ error() }}</span>
+    <button type="button" aria-label="Cerrar error" (click)="error.set(null)">×</button>
+  </div>
+}
+
+<section class="metrics" aria-label="Resumen de inventario">
+  <article class="metric">
+    <p>Productos con control</p>
+    <strong>{{ loadingLookups() ? '—' : trackedProductsTotal() }}</strong>
+    <small>Productos activos que mueven stock</small>
+  </article>
+  <article class="metric" [class.metric--alert]="(lowStock()?.total ?? 0) > 0">
+    <p>Bajo mínimo</p>
+    <strong>{{ loadingLowStock() ? '—' : (lowStock()?.total ?? 0) }}</strong>
+    <small>Incluye productos con stock en cero</small>
+  </article>
+  <article class="metric">
+    <p>Movimientos registrados</p>
+    <strong>{{ loadingMovements() ? '—' : (movements()?.total ?? 0) }}</strong>
+    <small>Historial de entradas y salidas</small>
+  </article>
+  <article class="metric metric--stock">
+    <p>Stock consultado</p>
+    <strong>{{ selectedStock()?.stockCurrent ?? '—' }}</strong>
+    <small>{{ selectedStock() ? selectedStock()!.unitAbbreviation + ' · mínimo ' + selectedStock()!.stockMinimum : 'Selecciona un producto abajo' }}</small>
+  </article>
+</section>
+
+<section class="stock-inspector surface">
+  <div class="stock-copy">
+    <p class="eyebrow">Consulta rápida</p>
+    <h2>Stock actual por producto</h2>
+    <p>Consulta las existencias disponibles y el nivel mínimo definido.</p>
+  </div>
+  <label class="field stock-selector">
+    <span>Producto</span>
+    <select class="input" name="stockProduct" [(ngModel)]="stockProductId" (ngModelChange)="stockProductChanged()">
+      <option value="">Selecciona un producto</option>
+      @for (product of productOptions(); track product.id) {
+        <option [value]="product.id">{{ product.sku }} · {{ product.name }}</option>
+      }
+    </select>
+  </label>
+  <div class="stock-result" aria-live="polite">
+    @if (loadingStock()) {
+      <span class="stock-placeholder">Consultando…</span>
+    } @else if (selectedStock(); as stock) {
+      <div>
+        <span>Disponible</span>
+        <strong>{{ stock.stockCurrent }} {{ stock.unitAbbreviation }}</strong>
+      </div>
+      <div>
+        <span>Mínimo</span>
+        <strong>{{ stock.stockMinimum }} {{ stock.unitAbbreviation }}</strong>
+      </div>
+    } @else {
+      <span class="stock-placeholder">Sin producto seleccionado</span>
+    }
+  </div>
+</section>
+
+<nav class="inventory-tabs" aria-label="Secciones de inventario">
+  <button type="button" [class.active]="activeTab() === 'movements'" (click)="switchTab('movements')">
+    Movimientos <span>{{ movements()?.total ?? 0 }}</span>
+  </button>
+  <button type="button" [class.active]="activeTab() === 'low-stock'" (click)="switchTab('low-stock')">
+    Bajo stock <span>{{ lowStock()?.total ?? 0 }}</span>
+  </button>
+</nav>
+
+@if (activeTab() === 'movements') {
+  <section class="inventory-panel surface">
+    <form class="filters filters--movements" (submit)="applyMovementFilters($event)">
+      <label class="field search-field">
+        <span>Buscar</span>
+        <input class="input" name="movementSearch" [(ngModel)]="movementSearch" placeholder="SKU o producto">
+      </label>
+      <label class="field">
+        <span>Tipo</span>
+        <select class="input" name="movementType" [(ngModel)]="movementType">
+          <option value="">Todos</option>
+          <option value="ENTRY">Entrada</option>
+          <option value="EXIT">Salida</option>
+          <option value="ADJUSTMENT_IN">Ajuste positivo</option>
+          <option value="ADJUSTMENT_OUT">Ajuste negativo</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Origen</span>
+        <select class="input" name="movementOrigin" [(ngModel)]="movementOrigin">
+          <option value="">Todos</option>
+          <option value="MANUAL">Manual</option>
+          <option value="INITIAL_BALANCE">Saldo inicial</option>
+          <option value="SALE">Venta</option>
+          <option value="SALE_CANCELLATION">Anulación de venta</option>
+          <option value="OTHER">Otro</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Desde</span>
+        <input class="input" type="date" name="movementDateFrom" [(ngModel)]="movementDateFrom">
+      </label>
+      <label class="field">
+        <span>Hasta</span>
+        <input class="input" type="date" name="movementDateTo" [(ngModel)]="movementDateTo">
+      </label>
+      <div class="filter-actions">
+        <button class="btn btn--ghost" type="submit">Aplicar</button>
+        <button class="btn btn--quiet" type="button" (click)="clearMovementFilters()">Limpiar</button>
+      </div>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Producto</th>
+            <th>Movimiento</th>
+            <th>Cantidad</th>
+            <th>Stock</th>
+            <th>Motivo</th>
+            <th>Registrado por</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loadingMovements()) {
+            <tr><td colspan="7" class="empty-state">Cargando movimientos…</td></tr>
+          } @else if ((movements()?.data?.length ?? 0) === 0) {
+            <tr><td colspan="7" class="empty-state">Todavía no hay movimientos para mostrar.</td></tr>
+          } @else {
+            @for (movement of movements()!.data; track movement.id) {
+              <tr>
+                <td><span class="date-cell">{{ formatDate(movement.createdAt) }}</span></td>
+                <td>
+                  <strong class="cell-title">{{ movement.product.name }}</strong>
+                  <span class="cell-note mono">{{ movement.product.sku }}</span>
+                </td>
+                <td>
+                  <span class="badge"
+                    [class.badge--ok]="movementTone(movement.movementType) === 'ok'"
+                    [class.badge--danger]="movementTone(movement.movementType) === 'danger'"
+                    [class.badge--info]="movementTone(movement.movementType) === 'info'">
+                    {{ movementLabel(movement.movementType) }}
+                  </span>
+                  <span class="cell-note">{{ originLabel(movement.origin) }}</span>
+                </td>
+                <td>
+                  <strong class="quantity"
+                    [class.quantity--in]="movementSign(movement.movementType) === '+'"
+                    [class.quantity--out]="movementSign(movement.movementType) !== '+'">
+                    {{ movementSign(movement.movementType) }}{{ movement.quantity }}
+                  </strong>
+                </td>
+                <td><span class="stock-flow mono">{{ movement.previousStock }} → {{ movement.newStock }}</span></td>
+                <td>
+                  <strong class="cell-title reason">{{ movement.reason }}</strong>
+                  @if (movement.notes) { <span class="cell-note reason">{{ movement.notes }}</span> }
+                </td>
+                <td>
+                  <span class="cell-title">{{ movement.createdBy.firstName }} {{ movement.createdBy.lastName }}</span>
+                  <span class="cell-note">{{ movement.createdBy.username }}</span>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pagination">
+      <label class="page-size">Filas
+        <select name="movementPageSize" [(ngModel)]="movementPageSize" (ngModelChange)="loadMovements(1)">
+          @for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }
+        </select>
+      </label>
+      <span class="page-summary">{{ rangeSummary(movements()) }}</span>
+      <div class="page-buttons">
+        <button class="btn btn--ghost" type="button" [disabled]="(movements()?.page ?? 1) <= 1 || loadingMovements()" (click)="previousMovementPage()">Anterior</button>
+        <button class="btn btn--ghost" type="button" [disabled]="(movements()?.page ?? 1) >= (movements()?.totalPages ?? 1) || loadingMovements()" (click)="nextMovementPage()">Siguiente</button>
+      </div>
+    </footer>
+  </section>
+} @else {
+  <section class="inventory-panel surface">
+    <form class="filters filters--low" (submit)="applyLowStockFilters($event)">
+      <label class="field search-field">
+        <span>Buscar</span>
+        <input class="input" name="lowStockSearch" [(ngModel)]="lowStockSearch" placeholder="SKU o producto">
+      </label>
+      <label class="field">
+        <span>Categoría</span>
+        <select class="input" name="lowStockCategory" [(ngModel)]="lowStockCategory">
+          <option value="">Todas</option>
+          @for (category of categoryOptions(); track category.id) {
+            <option [value]="category.id">{{ category.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span>Unidad</span>
+        <select class="input" name="lowStockUnit" [(ngModel)]="lowStockUnit">
+          <option value="">Todas</option>
+          @for (unit of unitOptions(); track unit.id) {
+            <option [value]="unit.id">{{ unit.name }} ({{ unit.abbreviation }})</option>
+          }
+        </select>
+      </label>
+      <div class="filter-actions">
+        <button class="btn btn--ghost" type="submit">Aplicar</button>
+        <button class="btn btn--quiet" type="button" (click)="clearLowStockFilters()">Limpiar</button>
+      </div>
+    </form>
+
+    <div class="table-wrap">
+      <table class="low-stock-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Stock actual</th>
+            <th>Stock mínimo</th>
+            <th>Nivel</th>
+            @if (canWrite()) { <th class="actions-heading">Acción</th> }
+          </tr>
+        </thead>
+        <tbody>
+          @if (loadingLowStock()) {
+            <tr><td [attr.colspan]="canWrite() ? 6 : 5" class="empty-state">Cargando alertas…</td></tr>
+          } @else if ((lowStock()?.data?.length ?? 0) === 0) {
+            <tr><td [attr.colspan]="canWrite() ? 6 : 5" class="empty-state">No hay productos bajo su stock mínimo.</td></tr>
+          } @else {
+            @for (item of lowStock()!.data; track item.id) {
+              <tr>
+                <td>
+                  <strong class="cell-title">{{ item.name }}</strong>
+                  <span class="cell-note mono">{{ item.sku }}</span>
+                </td>
+                <td>{{ item.category.name }}</td>
+                <td><strong class="stock-number">{{ item.stockCurrent }} {{ item.unit.abbreviation }}</strong></td>
+                <td><span class="mono">{{ item.stockMinimum }} {{ item.unit.abbreviation }}</span></td>
+                <td>
+                  <span class="badge" [class.badge--danger]="stockLevel(item) === 'zero'" [class.badge--warn]="stockLevel(item) === 'low'">
+                    {{ stockLevel(item) === 'zero' ? 'Sin stock' : 'Bajo mínimo' }}
+                  </span>
+                </td>
+                @if (canWrite()) {
+                  <td class="row-action">
+                    <button class="action-button" type="button" (click)="openMovementForm(item.stockCurrent === '0.000' ? 'INITIAL_BALANCE' : 'ENTRY', item.id)">
+                      {{ item.stockCurrent === '0.000' ? 'Cargar saldo' : 'Registrar entrada' }}
+                    </button>
+                  </td>
+                }
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pagination">
+      <label class="page-size">Filas
+        <select name="lowStockPageSize" [(ngModel)]="lowStockPageSize" (ngModelChange)="loadLowStock(1)">
+          @for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }
+        </select>
+      </label>
+      <span class="page-summary">{{ rangeSummary(lowStock()) }}</span>
+      <div class="page-buttons">
+        <button class="btn btn--ghost" type="button" [disabled]="(lowStock()?.page ?? 1) <= 1 || loadingLowStock()" (click)="previousLowStockPage()">Anterior</button>
+        <button class="btn btn--ghost" type="button" [disabled]="(lowStock()?.page ?? 1) >= (lowStock()?.totalPages ?? 1) || loadingLowStock()" (click)="nextLowStockPage()">Siguiente</button>
+      </div>
+    </footer>
+  </section>
+}
+
+@if (movementFormOpen()) {
+  <div class="modal-backdrop" (click)="closeMovementForm()">
+    <section class="modal surface" role="dialog" aria-modal="true" aria-labelledby="movement-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Movimiento manual</p>
+          <h2 id="movement-title">Registrar movimiento</h2>
+        </div>
+        <button class="close-button" type="button" aria-label="Cerrar" (click)="closeMovementForm()">×</button>
+      </header>
+
+      @if (error()) { <div class="modal-error" role="alert">{{ error() }}</div> }
+
+      <form class="movement-form" (submit)="submitMovement($event)">
+        <label class="field">
+          <span>Operación *</span>
+          <select class="input" name="operation" [(ngModel)]="movementForm.operation" (ngModelChange)="movementOperationChanged()" required>
+            <option value="INITIAL_BALANCE">Saldo inicial</option>
+            <option value="ENTRY">Entrada</option>
+            <option value="EXIT">Salida</option>
+            <option value="ADJUSTMENT_IN">Ajuste positivo</option>
+            <option value="ADJUSTMENT_OUT">Ajuste negativo</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Producto *</span>
+          <select class="input" name="productId" [(ngModel)]="movementForm.productId" (ngModelChange)="movementProductChanged()" required>
+            <option value="">Selecciona un producto</option>
+            @for (product of productOptions(); track product.id) {
+              <option [value]="product.id">{{ product.sku }} · {{ product.name }}</option>
+            }
+          </select>
+        </label>
+
+        @if (loadingStock()) {
+          <div class="current-stock">Consultando stock actual…</div>
+        } @else if (selectedStock(); as stock) {
+          <div class="current-stock">
+            <span>Stock actual</span>
+            <strong>{{ stock.stockCurrent }} {{ stock.unitAbbreviation }}</strong>
+            <small>Mínimo: {{ stock.stockMinimum }} · {{ stock.allowDecimal ? 'Admite decimales' : 'Solo enteros' }}</small>
+          </div>
+        }
+
+        <label class="field">
+          <span>Cantidad *</span>
+          <input class="input mono" name="quantity" [(ngModel)]="movementForm.quantity" inputmode="decimal" placeholder="0.000" required>
+        </label>
+
+        <label class="field">
+          <span>Motivo *</span>
+          <input class="input" name="reason" [(ngModel)]="movementForm.reason" maxlength="200" required>
+        </label>
+
+        <label class="field">
+          <span>Notas</span>
+          <textarea class="input textarea" name="notes" [(ngModel)]="movementForm.notes" maxlength="500" placeholder="Información adicional opcional"></textarea>
+        </label>
+
+        @if (movementForm.operation === 'INITIAL_BALANCE') {
+          <p class="form-hint">El saldo inicial solo puede registrarse una vez y cuando el producto aún está en cero.</p>
+        }
+
+        <footer class="modal-actions">
+          <button class="btn btn--quiet" type="button" [disabled]="actionLoading()" (click)="closeMovementForm()">Cancelar</button>
+          <button class="btn btn--primary" type="submit" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Registrando…' : 'Registrar ' + operationLabel(movementForm.operation).toLowerCase() }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
+}

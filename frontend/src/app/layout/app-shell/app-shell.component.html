@@ -35,8 +35,8 @@
     <header class="topbar">
       <button class="menu-button btn btn--quiet" (click)="menuOpen.set(!menuOpen())" aria-label="Abrir menú">☰</button>
       <div class="context">
-        <span class="context-title">Almacén General</span>
-        <span class="context-sub">Moneda S/ · IGV 18% · API conectada</span>
+        <span class="context-title">{{ auth.userName() }}</span>
+        <span class="context-sub">{{ roleLabel(auth.role()) }}</span>
       </div>
     </header>
 

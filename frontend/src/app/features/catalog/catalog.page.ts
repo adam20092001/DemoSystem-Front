@@ -193,6 +193,8 @@ export class CatalogPage implements OnInit {
       finalize(() => this.loadingDetail.set(false)),
     ).subscribe({
       next: detail => {
+        this.selectedProduct.set(null);
+        this.closeSpecificationForm();
         this.productForm = {
           sku: detail.sku,
           name: detail.name,
@@ -625,7 +627,7 @@ export class CatalogPage implements OnInit {
   }
 
   protected money(value: string): string {
-    return `S/ ${Number(value).toFixed(2)}`;
+    return Number(value).toFixed(2);
   }
 
   protected fileSize(bytes: number): string {

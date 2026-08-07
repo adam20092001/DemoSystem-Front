@@ -11,9 +11,9 @@ import { ActivatedRoute } from '@angular/router';
     </header>
     <section class="empty surface">
       <div class="glyph">{{ initials }}</div>
-      <p class="eyebrow">Módulo preparado</p>
-      <h2>La base ya está conectada al layout</h2>
-      <p class="empty-desc">Este módulo se construirá como una unidad independiente sobre la base transversal ya lista: navegación por rol, tokens de diseño y transporte HTTP centralizado.</p>
+      <p class="eyebrow">Próximamente</p>
+      <h2>Estamos preparando esta sección</h2>
+      <p class="empty-desc">Aquí encontrarás las herramientas necesarias para gestionar {{ titleLowercase }}. Por ahora puedes continuar usando las demás secciones.</p>
     </section>
   `,
   styles: [`
@@ -37,4 +37,5 @@ import { ActivatedRoute } from '@angular/router';
 export class FeaturePlaceholderPage {
   protected readonly data = inject(ActivatedRoute).snapshot.data;
   protected readonly initials = String(this.data['title']).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  protected readonly titleLowercase = String(this.data['title']).toLocaleLowerCase('es');
 }

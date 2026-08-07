@@ -20,8 +20,8 @@ import { ApiRequestError } from '../../core/errors/api-request.error';
         </a>
         <div class="promo-body">
           <p class="promo-kicker">Sistema interno de gestión comercial</p>
-          <h1>Control operativo para venta e inventario técnico.</h1>
-          <p class="lead">Catálogo técnico, cotizaciones, ventas e inventario trazable en una sola plataforma interna.</p>
+          <h1>Control sencillo para ventas e inventario.</h1>
+          <p class="lead">Productos, cotizaciones, ventas e inventario en un solo lugar.</p>
         </div>
         <ul class="module-list">
           <li>Catálogo y productos</li>
@@ -60,7 +60,7 @@ import { ApiRequestError } from '../../core/errors/api-request.error';
             }
           </button>
 
-          <p class="hint">La sesión se protege mediante una cookie segura administrada por el servidor.</p>
+          <p class="hint">Usa tus credenciales personales y no las compartas con otras personas.</p>
         </form>
       </section>
     </main>
