@@ -1,0 +1,87 @@
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Comercial</p>
+    <h1>Clientes</h1>
+    <p>Administra personas, empresas y prospectos.</p>
+  </div>
+  @if (canWrite()) { <button class="btn btn--primary" type="button" (click)="openCreate()">＋ Nuevo cliente</button> }
+</header>
+
+@if (notice()) { <div class="notice notice--ok" role="status"><span>{{ notice() }}</span><button type="button" aria-label="Cerrar mensaje" (click)="notice.set(null)">×</button></div> }
+@if (error()) { <div class="notice notice--error" role="alert"><span>{{ error() }}</span><button type="button" aria-label="Cerrar error" (click)="error.set(null)">×</button></div> }
+
+<section class="metrics" aria-label="Resumen de clientes">
+  <article class="metric"><p>Total encontrado</p><strong>{{ loading() ? '—' : (result()?.total ?? 0) }}</strong><small>Según los filtros actuales</small></article>
+  <article class="metric"><p>Clientes en la página</p><strong>{{ loading() ? '—' : (result()?.data?.length ?? 0) }}</strong><small>Personas y empresas visibles</small></article>
+  <article class="metric"><p>Prospectos visibles</p><strong>{{ loading() ? '—' : visibleStageCount('PROSPECT') }}</strong><small>Pendientes de conversión</small></article>
+  <article class="metric"><p>Bloqueados visibles</p><strong>{{ loading() ? '—' : visibleStatusCount('BLOCKED') }}</strong><small>Requieren revisión</small></article>
+</section>
+
+<section class="panel">
+  <form class="filters" (submit)="applyFilters($event)">
+    <label class="field filter--wide"><span>Buscar</span><input class="input" name="customerSearch" [(ngModel)]="search" placeholder="Nombre, documento o contacto"></label>
+    <label class="field"><span>Estado</span><select class="input" name="customerStatus" [(ngModel)]="status"><option value="">Todos</option>@for (item of customerStatuses; track item) { <option [value]="item">{{ statusLabel(item) }}</option> }</select></label>
+    <label class="field"><span>Tipo</span><select class="input" name="customerType" [(ngModel)]="customerType"><option value="">Todos</option>@for (item of customerTypes; track item) { <option [value]="item">{{ typeLabel(item) }}</option> }</select></label>
+    <label class="field"><span>Etapa</span><select class="input" name="customerStage" [(ngModel)]="customerStage"><option value="">Todas</option>@for (item of customerStages; track item) { <option [value]="item">{{ stageLabel(item) }}</option> }</select></label>
+    <div class="filter-actions"><button class="btn btn--primary" type="submit">Aplicar</button><button class="btn btn--ghost" type="button" (click)="clearFilters()">Limpiar</button></div>
+  </form>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Cliente</th><th>Documento</th><th>Tipo</th><th>Etapa</th><th>Contacto</th><th>Estado</th><th aria-label="Acciones"></th></tr></thead>
+      <tbody>
+        @if (loading()) { <tr><td colspan="7" class="empty">Actualizando clientes…</td></tr> }
+        @else if (!(result()?.data?.length)) { <tr><td colspan="7" class="empty">Todavía no hay clientes para mostrar.</td></tr> }
+        @else { @for (customer of result()!.data; track customer.id) {
+          <tr>
+            <td><div class="primary-cell"><strong>{{ customer.name }}</strong><small>{{ customer.tradeName || customer.code || customer.email || 'Sin información adicional' }}</small></div></td>
+            <td><div class="primary-cell"><strong>{{ customer.documentNumber || '—' }}</strong><small>{{ customer.documentType || (customer.isGeneric ? 'Cliente general' : 'Sin documento') }}</small></div></td>
+            <td>{{ typeLabel(customer.customerType) }}</td>
+            <td><span class="badge" [class.badge--brand]="customer.customerStage === 'CUSTOMER'" [class.badge--info]="customer.customerStage === 'PROSPECT'">{{ stageLabel(customer.customerStage) }}</span></td>
+            <td><div class="primary-cell"><strong>{{ customer.phone || customer.email || '—' }}</strong><small>{{ customer.contactName || customer.address || 'Sin contacto adicional' }}</small></div></td>
+            <td><span class="badge" [class]="statusClass(customer.status)">{{ statusLabel(customer.status) }}</span></td>
+            <td><div class="row-actions">
+              @if (canWrite() && !customer.isGeneric) { <button class="row-action" type="button" (click)="openEdit(customer)">Editar</button> }
+              @if (canWrite() && customer.customerStage === 'PROSPECT') { <button class="row-action" type="button" (click)="askAction('convert-to-customer', customer)">Convertir</button> }
+              @if (isAdmin() && !customer.isGeneric) {
+                @if (customer.status === 'ACTIVE') { <button class="row-action row-action--danger" type="button" (click)="askAction('block', customer)">Bloquear</button><button class="row-action" type="button" (click)="askAction('deactivate', customer)">Desactivar</button> }
+                @if (customer.status === 'BLOCKED') { <button class="row-action" type="button" (click)="askAction('unblock', customer)">Desbloquear</button> }
+                @if (customer.status === 'INACTIVE') { <button class="row-action" type="button" (click)="askAction('activate', customer)">Activar</button> }
+              }
+            </div></td>
+          </tr>
+        } }
+      </tbody>
+    </table>
+  </div>
+  <footer class="pagination"><span>{{ range() }}</span><div class="pagination__actions"><label>Filas <select class="input" name="customerPageSize" [(ngModel)]="pageSize" (ngModelChange)="loadCustomers(1)">@for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }</select></label><button class="btn btn--ghost" type="button" [disabled]="(result()?.page ?? 1) <= 1" (click)="previousPage()">Anterior</button><button class="btn btn--ghost" type="button" [disabled]="(result()?.page ?? 1) >= (result()?.totalPages ?? 1)" (click)="nextPage()">Siguiente</button></div></footer>
+</section>
+
+@if (formMode()) {
+  <div class="backdrop" role="presentation">
+    <form class="dialog" (submit)="submitCustomer($event)">
+      <header class="dialog__head"><div><p class="eyebrow">{{ formMode() === 'create' ? 'Nuevo registro' : 'Editar registro' }}</p><h2>{{ formMode() === 'create' ? 'Agregar cliente' : editing()?.name }}</h2></div><button class="dialog__close" type="button" aria-label="Cerrar" (click)="closeForm()">×</button></header>
+      <div class="dialog__body">
+        <div class="form-grid">
+          <label class="field"><span>Tipo *</span><select class="input" name="formCustomerType" [(ngModel)]="form.customerType" [disabled]="formMode() === 'edit'">@for (item of customerTypes; track item) { <option [ngValue]="item">{{ typeLabel(item) }}</option> }</select></label>
+          <label class="field"><span>Etapa *</span><select class="input" name="formCustomerStage" [(ngModel)]="form.customerStage" [disabled]="formMode() === 'edit'">@for (item of customerStages; track item) { <option [ngValue]="item">{{ stageLabel(item) }}</option> }</select></label>
+          <label class="field span-2"><span>Nombre o razón social *</span><input class="input" name="formCustomerName" [(ngModel)]="form.name" maxlength="150" required></label>
+          <label class="field"><span>Tipo de documento</span><select class="input" name="formDocumentType" [(ngModel)]="form.documentType"><option value="">Sin documento</option>@for (item of documentTypes; track item) { <option [ngValue]="item">{{ item }}</option> }</select></label>
+          <label class="field"><span>Número de documento</span><input class="input" name="formDocumentNumber" [(ngModel)]="form.documentNumber" maxlength="32"></label>
+          <label class="field"><span>Nombre comercial</span><input class="input" name="formTradeName" [(ngModel)]="form.tradeName" maxlength="150"></label>
+          <label class="field"><span>Persona de contacto</span><input class="input" name="formContactName" [(ngModel)]="form.contactName" maxlength="120"></label>
+          <label class="field"><span>Correo</span><input class="input" name="formEmail" type="email" [(ngModel)]="form.email" maxlength="150"></label>
+          <label class="field"><span>Teléfono</span><input class="input" name="formPhone" [(ngModel)]="form.phone" maxlength="30"></label>
+          <label class="field span-2"><span>Dirección</span><input class="input" name="formAddress" [(ngModel)]="form.address" maxlength="300"></label>
+          <label class="field span-2"><span>Notas internas</span><textarea class="input" name="formInternalNotes" [(ngModel)]="form.internalNotes" maxlength="1000"></textarea></label>
+        </div>
+        @if (error()) { <p class="danger-text" role="alert">{{ error() }}</p> }
+      </div>
+      <footer class="dialog__foot"><button class="btn btn--ghost" type="button" (click)="closeForm()">Cancelar</button><button class="btn btn--primary" type="submit" [disabled]="actionLoading()">{{ actionLoading() ? 'Guardando…' : 'Guardar' }}</button></footer>
+    </form>
+  </div>
+}
+
+@if (pendingAction()) {
+  <div class="backdrop" role="presentation"><section class="dialog dialog--small" role="dialog" aria-modal="true"><header class="dialog__head"><div><p class="eyebrow">Confirmación</p><h2>{{ actionTitle() }}</h2></div><button class="dialog__close" type="button" (click)="pendingAction.set(null)">×</button></header><div class="dialog__body"><p>{{ actionDescription() }}</p></div><footer class="dialog__foot"><button class="btn btn--ghost" type="button" (click)="pendingAction.set(null)">Volver</button><button class="btn btn--primary" type="button" [disabled]="actionLoading()" (click)="runAction()">Confirmar</button></footer></section></div>
+}

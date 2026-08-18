@@ -1,0 +1,25 @@
+<header class="page-header"><div><p class="eyebrow">Ventas</p><h1>Punto de venta</h1><p>Registra una venta directa, su pago inicial y la salida de inventario.</p></div></header>
+@if (error()) { <div class="notice notice--error"><span>{{ error() }}</span><button type="button" (click)="error.set(null)">×</button></div> }
+
+<form class="panel" (submit)="submitSale($event)">
+  <div class="panel__head"><div><h2>Nueva venta</h2><p class="hint">La venta se confirmará al guardar.</p></div><button class="btn btn--primary" type="submit" [disabled]="saving() || loading()">{{ saving() ? 'Registrando…' : 'Confirmar venta' }}</button></div>
+  <div class="panel__body">
+    <div class="form-grid">
+      <label class="field"><span>Cliente *</span><select class="input" name="posCustomer" [(ngModel)]="customerId"><option value="">Selecciona un cliente</option>@for (customer of customers(); track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.documentNumber ? ' · ' + customer.documentNumber : '' }}</option> }</select></label>
+      <label class="field"><span>Descuento</span><input class="input" name="posDiscount" [(ngModel)]="discountAmount" inputmode="decimal" placeholder="0.00"></label>
+    </div>
+
+    <section class="form-section"><div class="form-section__head"><div><h3>Productos y servicios</h3><p class="hint">El precio se toma del catálogo vigente.</p></div><button class="btn btn--ghost" type="button" (click)="addLine()">＋ Agregar línea</button></div>
+      <div class="line-list">@for (line of lines; track line.key) { <div class="line-item"><label class="field product-field"><span>Producto o servicio</span><select class="input" [name]="'posProduct' + line.key" [(ngModel)]="line.productId"><option value="">Selecciona</option>@for (product of products(); track product.id) { <option [value]="product.id">{{ product.sku }} · {{ product.name }} · {{ formatMoney(product.salePrice) }}{{ product.isInventoryTracked ? ' · Stock ' + product.stockCurrent : '' }}</option> }</select></label><label class="field"><span>Cantidad</span><input class="input" [name]="'posQuantity' + line.key" [(ngModel)]="line.quantity" inputmode="decimal"></label><div class="line-total">{{ formatMoney(lineTotal(line)) }}</div><button class="icon-button" type="button" [disabled]="lines.length === 1" aria-label="Quitar línea" (click)="removeLine(line.key)">×</button></div> }</div>
+      @if (!loading() && !products().length) { <p class="empty">No hay productos o servicios activos. Agrégalos desde Productos para registrar una venta.</p> }
+    </section>
+
+    <section class="form-section"><div class="form-section__head"><div><h3>Pago inicial</h3><p class="hint">Puedes dejar la venta pendiente y cobrar después.</p></div></div><label class="checkbox"><input type="checkbox" name="posPaymentEnabled" [(ngModel)]="paymentEnabled"> Registrar pago ahora</label>
+      @if (paymentEnabled) { <div class="form-grid"><label class="field"><span>Método *</span><select class="input" name="posPaymentMethod" [(ngModel)]="paymentMethod">@for (method of paymentMethods; track method) { <option [ngValue]="method">{{ methodLabel(method) }}</option> }</select></label><label class="field"><span>Monto *</span><input class="input" name="posPaymentAmount" [(ngModel)]="paymentAmount" inputmode="decimal" placeholder="0.00"></label><label class="field span-2"><span>Referencia</span><input class="input" name="posPaymentReference" [(ngModel)]="paymentReference" maxlength="100" placeholder="Operación, voucher o autorización"></label></div> }
+    </section>
+
+    <div class="summary-box"><div class="summary-row"><span>Subtotal referencial</span><strong>{{ formatMoney(subtotal()) }}</strong></div><div class="summary-row"><span>Descuento</span><strong>− {{ formatMoney(discountAmount || 0) }}</strong></div><div class="summary-row summary-row--total"><span>Total referencial</span><strong>{{ formatMoney(total()) }}</strong></div><p class="hint">El importe definitivo se calculará al confirmar.</p></div>
+  </div>
+</form>
+
+@if (completedSale()) { <div class="backdrop"><section class="dialog dialog--small"><header class="dialog__head"><div><p class="eyebrow">Venta registrada</p><h2 class="mono">{{ completedSale()!.number }}</h2></div><button class="dialog__close" type="button" (click)="closeResult()">×</button></header><div class="dialog__body"><div class="detail-grid"><div class="detail-card"><span>Cliente</span><strong>{{ completedSale()!.customerName }}</strong></div><div class="detail-card"><span>Total</span><strong>{{ formatMoney(completedSale()!.total) }}</strong></div><div class="detail-card"><span>Saldo</span><strong>{{ formatMoney(completedSale()!.balanceDue) }}</strong></div></div><p>La venta y sus movimientos fueron registrados correctamente.</p></div><footer class="dialog__foot"><button class="btn btn--ghost" type="button" (click)="commercial.openSalePrint(completedSale()!.id)">Imprimir</button><button class="btn btn--primary" type="button" (click)="closeResult()">Nueva venta</button></footer></section></div> }
