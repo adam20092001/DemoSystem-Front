@@ -15,6 +15,7 @@ const ICONS: Record<string, string> = {
   file: '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
   receipt: '<path d="M5 3h14v18l-2.3-1.5L14 21l-2-1.4L10 21l-2.7-1.5L5 21z"/><path d="M9 8h6M9 12h6"/>',
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h12v4M3 7v10a2 2 0 0 0 2 2h14V9H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14" r="1.2"/>',
+  book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22z"/>',
   chart: '<path d="M4 20V4M4 20h16M8 20v-6M12 20v-9M16 20v-4"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 6.6 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.4H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 6.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 .9 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
 };
@@ -49,6 +50,7 @@ export class AppShellComponent {
     { label: 'Cotizaciones', route: '/quotes', icon: 'file', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Ventas', route: '/sales', icon: 'receipt', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Pagos', route: '/payments', icon: 'wallet', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
+    { label: 'Contabilidad', route: '/accounting', icon: 'book', roles: ['ADMIN', 'MANAGEMENT'] },
     { label: 'Reportes', route: '/reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT'] },
     { label: 'Usuarios', route: '/users', icon: 'users', roles: ['ADMIN'] },
     { label: 'Configuración', route: '/settings', icon: 'settings', roles: ['ADMIN'] },

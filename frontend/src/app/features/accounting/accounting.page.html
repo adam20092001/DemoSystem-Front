@@ -1,0 +1,348 @@
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Administración financiera</p>
+    <h1>Contabilidad</h1>
+    <p>
+      Consulta el plan de cuentas y los movimientos generados por ventas y
+      pagos.
+    </p>
+  </div>
+</header>
+
+@if (error()) {
+<div class="notice notice--error" role="alert">
+  <span>{{ error() }}</span>
+  <button type="button" aria-label="Cerrar mensaje" (click)="error.set(null)">
+    ×
+  </button>
+</div>
+}
+
+<section class="metrics" aria-label="Resumen contable">
+  <article class="metric">
+    <p>Cuentas disponibles</p>
+    <strong>{{ loadingAccounts() ? '—' : accounts().length }}</strong>
+    <small>Plan de cuentas interno</small>
+  </article>
+  <article class="metric">
+    <p>Movimientos encontrados</p>
+    <strong>{{ loadingEntries() ? '—' : (entries()?.total ?? 0) }}</strong>
+    <small>Según los filtros actuales</small>
+  </article>
+  <article class="metric">
+    <p>Registros visibles</p>
+    <strong
+      >{{ loadingEntries() ? '—' : visibleEventCount('ORIGINAL') }}</strong
+    >
+    <small>Operaciones registradas</small>
+  </article>
+  <article class="metric">
+    <p>Reversiones visibles</p>
+    <strong
+      >{{ loadingEntries() ? '—' : visibleEventCount('REVERSAL') }}</strong
+    >
+    <small>Operaciones anuladas</small>
+  </article>
+</section>
+
+<nav class="tabs" aria-label="Secciones de contabilidad">
+  <button
+    class="tab"
+    type="button"
+    [class.tab--active]="activeTab() === 'entries'"
+    (click)="switchTab('entries')"
+  >
+    Libro diario
+  </button>
+  <button
+    class="tab"
+    type="button"
+    [class.tab--active]="activeTab() === 'accounts'"
+    (click)="switchTab('accounts')"
+  >
+    Plan de cuentas
+  </button>
+</nav>
+
+@if (activeTab() === 'entries') {
+<section class="panel">
+  <form class="filters accounting-filters" (submit)="applyFilters($event)">
+    <label class="field">
+      <span>Origen</span>
+      <select
+        class="input"
+        name="accountingSourceType"
+        [(ngModel)]="sourceType"
+      >
+        <option value="">Todos</option>
+        @for (source of sourceTypes; track source) {
+        <option [value]="source">{{ sourceLabel(source) }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span>Movimiento</span>
+      <select class="input" name="accountingEventType" [(ngModel)]="eventType">
+        <option value="">Todos</option>
+        @for (event of eventTypes; track event) {
+        <option [value]="event">{{ eventLabel(event) }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span>Desde</span>
+      <input
+        class="input"
+        type="date"
+        name="accountingPostedFrom"
+        [(ngModel)]="postedFrom"
+      />
+    </label>
+    <label class="field">
+      <span>Hasta</span>
+      <input
+        class="input"
+        type="date"
+        name="accountingPostedTo"
+        [(ngModel)]="postedTo"
+      />
+    </label>
+    <div class="filter-actions">
+      <button class="btn btn--primary" type="submit">Aplicar</button>
+      <button class="btn btn--ghost" type="button" (click)="clearFilters()">
+        Limpiar
+      </button>
+    </div>
+  </form>
+
+  <div class="table-wrap">
+    <table class="data-table accounting-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Origen</th>
+          <th>Movimiento</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loadingEntries()) {
+        <tr>
+          <td colspan="5" class="empty">Actualizando movimientos…</td>
+        </tr>
+        } @else if (!(entries()?.data?.length)) {
+        <tr>
+          <td colspan="5" class="empty">
+            Todavía no hay movimientos contables para mostrar.
+          </td>
+        </tr>
+        } @else { @for (entry of entries()!.data; track entry.id) {
+        <tr>
+          <td>{{ formatDate(entry.postedAt) }}</td>
+          <td><strong>{{ entry.description }}</strong></td>
+          <td>{{ sourceLabel(entry.sourceType) }}</td>
+          <td>
+            <span
+              class="badge"
+              [class.badge--info]="entry.eventType === 'ORIGINAL'"
+              [class.badge--warn]="entry.eventType === 'REVERSAL'"
+            >
+              {{ eventLabel(entry.eventType) }}
+            </span>
+          </td>
+          <td>
+            <div class="row-actions">
+              <button
+                class="row-action"
+                type="button"
+                (click)="openDetail(entry.id)"
+              >
+                Ver detalle
+              </button>
+            </div>
+          </td>
+        </tr>
+        } }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pagination">
+    <span>{{ range() }}</span>
+    <div class="pagination__actions">
+      <label>
+        Filas
+        <select
+          class="input"
+          name="accountingPageSize"
+          [(ngModel)]="pageSize"
+          (ngModelChange)="loadEntries(1)"
+        >
+          @for (size of pageSizes; track size) {
+          <option [ngValue]="size">{{ size }}</option>
+          }
+        </select>
+      </label>
+      <button
+        class="btn btn--ghost"
+        type="button"
+        [disabled]="(entries()?.page ?? 1) <= 1"
+        (click)="previousPage()"
+      >
+        Anterior
+      </button>
+      <button
+        class="btn btn--ghost"
+        type="button"
+        [disabled]="(entries()?.page ?? 1) >= (entries()?.totalPages ?? 1)"
+        (click)="nextPage()"
+      >
+        Siguiente
+      </button>
+    </div>
+  </footer>
+</section>
+} @if (activeTab() === 'accounts') {
+<section class="panel">
+  <header class="panel__head">
+    <div>
+      <p class="eyebrow">Estructura financiera</p>
+      <h2>Plan de cuentas</h2>
+    </div>
+    <span class="account-count">{{ accounts().length }} cuentas</span>
+  </header>
+  <div class="table-wrap">
+    <table class="data-table accounts-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Cuenta</th>
+          <th>Clasificación</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loadingAccounts()) {
+        <tr>
+          <td colspan="3" class="empty">Actualizando cuentas…</td>
+        </tr>
+        } @else if (!accounts().length) {
+        <tr>
+          <td colspan="3" class="empty">
+            Todavía no hay cuentas configuradas.
+          </td>
+        </tr>
+        } @else { @for (account of accounts(); track account.id) {
+        <tr>
+          <td><strong class="mono account-code">{{ account.code }}</strong></td>
+          <td><strong>{{ account.name }}</strong></td>
+          <td>{{ accountTypeLabel(account.type) }}</td>
+        </tr>
+        } }
+      </tbody>
+    </table>
+  </div>
+</section>
+} @if (loadingDetail()) {
+<div class="detail-loader" role="status">Preparando detalle…</div>
+} @if (detail()) {
+<div class="backdrop">
+  <section
+    class="dialog dialog--wide"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="entry-title"
+  >
+    <header class="dialog__head">
+      <div>
+        <p class="eyebrow">Movimiento contable</p>
+        <h2 id="entry-title">{{ detail()!.description }}</h2>
+      </div>
+      <button
+        class="dialog__close"
+        type="button"
+        aria-label="Cerrar"
+        (click)="detail.set(null)"
+      >
+        ×
+      </button>
+    </header>
+    <div class="dialog__body">
+      <div class="detail-grid">
+        <div class="detail-card">
+          <span>Fecha</span>
+          <strong>{{ formatDate(detail()!.postedAt) }}</strong>
+        </div>
+        <div class="detail-card">
+          <span>Origen</span>
+          <strong>{{ sourceLabel(detail()!.sourceType) }}</strong>
+        </div>
+        <div class="detail-card">
+          <span>Movimiento</span>
+          <strong>{{ eventLabel(detail()!.eventType) }}</strong>
+        </div>
+        <div class="detail-card">
+          <span>Registrado por</span>
+          <strong
+            >{{ detail()!.createdBy.firstName }} {{ detail()!.createdBy.lastName
+            }}</strong
+          >
+        </div>
+      </div>
+
+      @if (detail()!.eventType === 'REVERSAL') {
+      <div class="reversal-note">
+        Este movimiento revierte automáticamente una operación anterior.
+      </div>
+      }
+
+      <section class="detail-section">
+        <h3>Detalle del movimiento</h3>
+        <div class="table-wrap">
+          <table class="data-table entry-lines-table">
+            <thead>
+              <tr>
+                <th>Cuenta</th>
+                <th class="number">Debe</th>
+                <th class="number">Haber</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of detail()!.lines; track line.id) {
+              <tr>
+                <td>
+                  <div class="primary-cell">
+                    <strong>{{ line.accountName }}</strong>
+                    <small class="mono">{{ line.accountCode }}</small>
+                  </div>
+                </td>
+                <td class="number">
+                  {{ isPositive(line.debitAmount) ?
+                  formatMoney(line.debitAmount) : '—' }}
+                </td>
+                <td class="number">
+                  {{ isPositive(line.creditAmount) ?
+                  formatMoney(line.creditAmount) : '—' }}
+                </td>
+              </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <th>Total</th>
+                <th class="number">{{ formatMoney(detailDebit()) }}</th>
+                <th class="number">{{ formatMoney(detailCredit()) }}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+    <footer class="dialog__foot">
+      <button class="btn btn--ghost" type="button" (click)="detail.set(null)">
+        Cerrar
+      </button>
+    </footer>
+  </section>
+</div>
+}

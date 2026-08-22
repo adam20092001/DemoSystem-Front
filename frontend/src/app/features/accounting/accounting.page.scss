@@ -1,0 +1,62 @@
+.accounting-filters {
+  grid-template-columns: repeat(4, minmax(140px, 1fr)) auto;
+}
+
+.accounting-table {
+  min-width: 760px;
+}
+
+.accounts-table,
+.entry-lines-table {
+  min-width: 620px;
+}
+
+.account-code {
+  color: var(--brand-ink);
+}
+
+.account-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reversal-note {
+  padding: 12px 14px;
+  color: var(--warn-ink);
+  background: var(--warn-tint);
+  border: 1px solid color-mix(in oklch, var(--warn) 28%, transparent);
+  border-radius: var(--r-md);
+}
+
+.entry-lines-table tfoot th {
+  padding: 13px 14px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--line-strong);
+}
+
+.detail-loader {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: var(--z-toast);
+  padding: 11px 14px;
+  color: var(--brand-ink);
+  background: var(--brand-tint);
+  border: 1px solid color-mix(in oklch, var(--brand) 25%, transparent);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-md);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .accounting-filters {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .accounting-filters {
+    grid-template-columns: 1fr;
+  }
+}
