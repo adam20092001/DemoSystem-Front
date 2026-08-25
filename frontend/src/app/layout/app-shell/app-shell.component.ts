@@ -51,7 +51,7 @@ export class AppShellComponent {
     { label: 'Ventas', route: '/sales', icon: 'receipt', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Pagos', route: '/payments', icon: 'wallet', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Contabilidad', route: '/accounting', icon: 'book', roles: ['ADMIN', 'MANAGEMENT'] },
-    { label: 'Reportes', route: '/reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT'] },
+    { label: 'Reportes', route: '/reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'SELLER'] },
     { label: 'Usuarios', route: '/users', icon: 'users', roles: ['ADMIN'] },
     { label: 'Configuración', route: '/settings', icon: 'settings', roles: ['ADMIN'] },
   ];

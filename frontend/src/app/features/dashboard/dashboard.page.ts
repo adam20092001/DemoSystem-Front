@@ -1,91 +1,86 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize, forkJoin, take } from 'rxjs';
+import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
-import { ApiRequestError } from '../../core/errors/api-request.error';
-import { ApiClient } from '../../core/http/api-client.service';
-import { CatalogService } from '../catalog/catalog.service';
-
-interface HealthResponse {
-  status: 'ok' | 'error';
-  application: 'up' | 'down';
-  database: 'up' | 'down';
-  uptime: number;
-  timestamp: string;
-}
-
-interface RealMetric {
-  label: string;
-  value: number;
-  route: string;
-}
+import { money, requestErrorMessage, shortDate } from '../commercial/commercial.util';
+import { DashboardQuoteStatus, DashboardResponse } from './dashboard.model';
+import { DashboardService } from './dashboard.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DatePipe, RouterLink],
+  imports: [FormsModule, RouterLink],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardPage implements OnInit {
   protected readonly auth = inject(AuthService);
-  private readonly api = inject(ApiClient);
-  private readonly catalog = inject(CatalogService);
+  private readonly dashboardService = inject(DashboardService);
 
-  protected readonly metrics = signal<RealMetric[]>([]);
-  protected readonly health = signal<HealthResponse | null>(null);
+  protected readonly dashboard = signal<DashboardResponse | null>(null);
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
 
+  protected from = '';
+  protected to = '';
+
   ngOnInit(): void {
-    this.loadRealData();
+    this.loadDashboard();
   }
 
-  protected reload(): void {
-    this.loadRealData();
+  protected applyPeriod(event: Event): void {
+    event.preventDefault();
+    if ((this.from && !this.to) || (!this.from && this.to)) {
+      this.error.set('Selecciona las dos fechas para consultar un período personalizado.');
+      return;
+    }
+    if (this.from && this.to && this.from > this.to) {
+      this.error.set('La fecha inicial no puede ser posterior a la fecha final.');
+      return;
+    }
+    this.loadDashboard();
   }
 
-  protected healthLabel(value: 'up' | 'down' | undefined): string {
-    if (value === 'up') return 'Disponible';
-    if (value === 'down') return 'No disponible';
-    return 'Pendiente';
+  protected clearPeriod(): void {
+    this.from = '';
+    this.to = '';
+    this.loadDashboard();
   }
 
-  private loadRealData(): void {
+  protected formatMoney(value: string | number): string {
+    return money(value);
+  }
+
+  protected formatDate(value: string): string {
+    return shortDate(value);
+  }
+
+  protected quoteStatusLabel(status: DashboardQuoteStatus): string {
+    return {
+      PENDING: 'Pendientes',
+      ACCEPTED: 'Aceptadas',
+      REJECTED: 'Rechazadas',
+      EXPIRED: 'Vencidas',
+      CONVERTED: 'Convertidas',
+    }[status];
+  }
+
+  protected loadDashboard(): void {
     this.loading.set(true);
     this.error.set(null);
-
-    forkJoin({
-      products: this.catalog.listProducts({ page: 1, limit: 1, status: 'ACTIVE', productType: 'PRODUCT' }),
-      services: this.catalog.listProducts({ page: 1, limit: 1, status: 'ACTIVE', productType: 'SERVICE' }),
-      categories: this.catalog.listCategories({ page: 1, limit: 1, status: 'ACTIVE' }),
-      units: this.catalog.listUnits({ page: 1, limit: 1, status: 'ACTIVE' }),
-      health: this.api.get<HealthResponse>('health'),
-    }).pipe(
-      take(1),
-      finalize(() => this.loading.set(false)),
-    ).subscribe({
-      next: result => {
-        this.metrics.set([
-          { label: 'Productos activos', value: result.products.total, route: '/products' },
-          { label: 'Servicios activos', value: result.services.total, route: '/products' },
-          { label: 'Categorías activas', value: result.categories.total, route: '/products' },
-          { label: 'Unidades activas', value: result.units.total, route: '/products' },
-        ]);
-        this.health.set(result.health);
-      },
-      error: error => {
-        this.metrics.set([]);
-        this.health.set(null);
-        this.error.set(errorMessage(error));
-      },
-    });
+    this.dashboardService
+      .getDashboard({
+        ...(this.from ? { from: this.from } : {}),
+        ...(this.to ? { to: this.to } : {}),
+      })
+      .pipe(
+        take(1),
+        finalize(() => this.loading.set(false)),
+      )
+      .subscribe({
+        next: (dashboard) => this.dashboard.set(dashboard),
+        error: (error) => this.error.set(requestErrorMessage(error)),
+      });
   }
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof ApiRequestError
-    ? error.message
-    : 'No se pudo actualizar el resumen. Inténtalo nuevamente.';
 }

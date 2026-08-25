@@ -59,7 +59,7 @@
 
 * { box-sizing: border-box; }
 
-html, body { height: 100%; }
+html, body { height: 100%; min-width: 0; overflow-x: hidden; }
 
 body {
   margin: 0;
@@ -68,6 +68,8 @@ body {
   line-height: 1.5;
   font-variant-numeric: tabular-nums;
 }
+
+img, svg { max-width: 100%; }
 
 h1, h2, h3, h4 { margin: 0; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; text-wrap: balance; }
 
@@ -160,6 +162,14 @@ a { color: inherit; }
 .input::placeholder { color: var(--muted); }
 .input:hover { border-color: var(--muted); }
 .input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+
+/* Los controles nunca deben forzar el ancho de su contenedor. */
+:where(input, select, textarea, button) { max-width: 100%; }
+
+@media (max-width: 480px) {
+  body { font-size: 13.5px; }
+  .btn { min-height: 42px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

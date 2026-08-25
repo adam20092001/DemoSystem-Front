@@ -104,6 +104,8 @@ export interface ListProductsQuery extends ListCatalogQuery {
   unitId?: string;
   productType?: ProductType;
   isInventoryTracked?: boolean;
+  brand?: string;
+  lowStockOnly?: boolean;
 }
 
 export interface SaveCategoryRequest {

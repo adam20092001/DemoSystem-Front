@@ -90,6 +90,14 @@
               <option value="false">Sin control de stock</option>
             </select>
           </label>
+          <label class="field">
+            <span>Marca</span>
+            <input class="input" name="productBrand" [(ngModel)]="productBrand" placeholder="Buscar marca">
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="productLowStock" [(ngModel)]="productLowStock">
+            Solo productos con stock bajo
+          </label>
         </div>
       </details>
       <div class="filter-actions">

@@ -21,7 +21,7 @@ export const routes: Routes = [
     { path: 'sales', canActivate: [roleGuard], data: { roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] }, loadComponent: () => import('./features/commercial/sales.page').then(m => m.SalesPage) },
     { path: 'payments', canActivate: [roleGuard], data: { roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] }, loadComponent: () => import('./features/commercial/payments.page').then(m => m.PaymentsPage) },
     { path: 'accounting', canActivate: [roleGuard], data: { roles: ['ADMIN', 'MANAGEMENT'] }, loadComponent: () => import('./features/accounting/accounting.page').then(m => m.AccountingPage) },
-    { path: 'reports', canActivate: [roleGuard], data: { roles: ['ADMIN', 'MANAGEMENT'], title: 'Reportes', eyebrow: 'Inteligencia', description: 'Diez reportes operativos con filtros y totales.' }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then(m => m.FeaturePlaceholderPage) },
+    { path: 'reports', canActivate: [roleGuard], data: { roles: ['ADMIN', 'MANAGEMENT', 'SELLER'] }, loadComponent: () => import('./features/reports/reports.page').then(m => m.ReportsPage) },
     { path: 'users', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/users/users.page').then(m => m.UsersPage) },
     { path: 'settings', canActivate: [roleGuard], data: { roles: ['ADMIN'], title: 'Configuración', eyebrow: 'Administración', description: 'Empresa, moneda, IGV, parámetros y correlativos.' }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then(m => m.FeaturePlaceholderPage) },
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },

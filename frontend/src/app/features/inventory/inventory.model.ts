@@ -56,6 +56,7 @@ export interface LowStockItem {
   name: string;
   stockCurrent: string;
   stockMinimum: string;
+  difference: string;
   category: {
     id: string;
     name: string;
@@ -84,6 +85,8 @@ export interface ListLowStockQuery {
   categoryId?: string;
   unitId?: string;
   search?: string;
+  brand?: string;
+  status?: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface RegisterInventoryMovementRequest {

@@ -189,6 +189,7 @@ export interface SaleListItem {
   customerName: string;
   customerDocumentNumber: string | null;
   sellerId: string;
+  seller: CommercialUserSummary;
   subtotal: string;
   discountAmount: string;
   taxAmount: string;

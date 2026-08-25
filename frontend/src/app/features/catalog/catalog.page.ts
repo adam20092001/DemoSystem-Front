@@ -74,11 +74,13 @@ export class CatalogPage implements OnInit {
   protected readonly pageSizes = [10, 20, 50];
 
   protected productSearch = '';
+  protected productBrand = '';
   protected productStatus = '';
   protected productType = '';
   protected productCategory = '';
   protected productUnit = '';
   protected productInventory = '';
+  protected productLowStock = false;
   protected productPageSize = 20;
 
   protected categorySearch = '';
@@ -139,11 +141,13 @@ export class CatalogPage implements OnInit {
 
   protected clearProductFilters(): void {
     this.productSearch = '';
+    this.productBrand = '';
     this.productStatus = '';
     this.productType = '';
     this.productCategory = '';
     this.productUnit = '';
     this.productInventory = '';
+    this.productLowStock = false;
     this.loadProducts(1);
   }
 
@@ -154,11 +158,16 @@ export class CatalogPage implements OnInit {
       page,
       limit: this.productPageSize,
       ...(this.productSearch.trim() ? { search: this.productSearch.trim() } : {}),
+      ...(this.productBrand.trim() ? { brand: this.productBrand.trim() } : {}),
       ...(this.productStatus ? { status: this.productStatus as CatalogStatus } : {}),
       ...(this.productType ? { productType: this.productType as ProductType } : {}),
       ...(this.productCategory ? { categoryId: this.productCategory } : {}),
       ...(this.productUnit ? { unitId: this.productUnit } : {}),
-      ...(this.productInventory ? { isInventoryTracked: this.productInventory === 'true' } : {}),
+      ...(this.productLowStock
+        ? { isInventoryTracked: true, lowStockOnly: true }
+        : this.productInventory
+          ? { isInventoryTracked: this.productInventory === 'true' }
+          : {}),
     }).pipe(
       take(1),
       finalize(() => this.loadingProducts.set(false)),

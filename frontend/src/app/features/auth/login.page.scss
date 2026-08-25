@@ -43,3 +43,7 @@ form .field { margin-top: 16px; }
   .promo { display: none; }
   .access { min-height: 100vh; }
 }
+
+@media (max-width: 480px) {
+  .access { align-items: start; padding: max(48px, 10vh) 18px 28px; }
+}

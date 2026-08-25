@@ -73,6 +73,8 @@ export class InventoryPage implements OnInit {
   protected movementPageSize = 20;
 
   protected lowStockSearch = '';
+  protected lowStockBrand = '';
+  protected lowStockStatus = '';
   protected lowStockCategory = '';
   protected lowStockUnit = '';
   protected lowStockPageSize = 20;
@@ -169,6 +171,8 @@ export class InventoryPage implements OnInit {
 
   protected clearLowStockFilters(): void {
     this.lowStockSearch = '';
+    this.lowStockBrand = '';
+    this.lowStockStatus = '';
     this.lowStockCategory = '';
     this.lowStockUnit = '';
     this.loadLowStock(1);
@@ -181,6 +185,8 @@ export class InventoryPage implements OnInit {
       page,
       limit: this.lowStockPageSize,
       ...(this.lowStockSearch.trim() ? { search: this.lowStockSearch.trim() } : {}),
+      ...(this.lowStockBrand.trim() ? { brand: this.lowStockBrand.trim() } : {}),
+      ...(this.lowStockStatus ? { status: this.lowStockStatus as 'ACTIVE' | 'INACTIVE' } : {}),
       ...(this.lowStockCategory ? { categoryId: this.lowStockCategory } : {}),
       ...(this.lowStockUnit ? { unitId: this.lowStockUnit } : {}),
     }).pipe(

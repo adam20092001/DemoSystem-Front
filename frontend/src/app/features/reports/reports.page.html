@@ -1,0 +1,96 @@
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Análisis operativo</p>
+    <h1>Reportes</h1>
+    <p>Consulta información comercial consolidada directamente desde las operaciones registradas.</p>
+  </div>
+</header>
+
+@if (error()) {
+  <div class="notice notice--error" role="alert">
+    <span>{{ error() }}</span>
+    <button type="button" aria-label="Cerrar mensaje" (click)="error.set(null)">×</button>
+  </div>
+}
+
+<nav class="report-tabs" aria-label="Tipos de reporte">
+  @for (tab of reportTabs; track tab.kind) {
+    <button type="button" [class.active]="activeReport() === tab.kind" (click)="switchReport(tab.kind)">{{ tab.label }}</button>
+  }
+</nav>
+
+<section class="report-heading">
+  <div><p class="eyebrow">Reporte actual</p><h2>{{ title() }}</h2><p>{{ description() }}</p></div>
+  <div class="report-summary"><span>Registros encontrados</span><strong>{{ loading() ? '—' : (result()?.total ?? 0) }}</strong></div>
+  <div class="report-summary"><span>Monto visible</span><strong>{{ loading() ? '—' : formatMoney(visibleAmount()) }}</strong></div>
+</section>
+
+<section class="panel">
+  <form class="filters report-filters" (submit)="applyFilters($event)">
+    <label class="field"><span>Desde</span><input class="input" type="date" name="reportFrom" [(ngModel)]="from"></label>
+    <label class="field"><span>Hasta</span><input class="input" type="date" name="reportTo" [(ngModel)]="to"></label>
+
+    @if (activeReport() === 'sales-by-product') {
+      <label class="field"><span>Categoría</span><select class="input" name="reportCategory" [(ngModel)]="categoryId"><option value="">Todas</option>@for (category of categories(); track category.id) { <option [value]="category.id">{{ category.name }}</option> }</select></label>
+      <label class="field filter--wide"><span>Producto</span><select class="input" name="reportProduct" [(ngModel)]="productId"><option value="">Todos</option>@for (product of products(); track product.id) { <option [value]="product.id">{{ product.sku }} · {{ product.name }}</option> }</select></label>
+    }
+    @if (activeReport() === 'sales-by-customer') {
+      <label class="field"><span>Tipo de cliente</span><select class="input" name="reportCustomerType" [(ngModel)]="customerType"><option value="">Todos</option>@for (type of customerTypes; track type) { <option [value]="type">{{ customerTypeLabel(type) }}</option> }</select></label>
+      <label class="field filter--wide"><span>Cliente</span><select class="input" name="reportCustomer" [(ngModel)]="customerId"><option value="">Todos</option>@for (customer of customers(); track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
+    }
+    @if (activeReport() === 'sales-by-seller') {
+      <label class="field filter--wide"><span>Vendedor</span><select class="input" name="reportSeller" [(ngModel)]="sellerId"><option value="">Todos</option>@for (seller of sellers(); track seller.id) { <option [value]="seller.id">{{ seller.firstName }} {{ seller.lastName }}</option> }</select></label>
+    }
+    @if (activeReport() === 'quotes-by-status') {
+      <label class="field"><span>Estado</span><select class="input" name="reportQuoteStatus" [(ngModel)]="quoteStatus"><option value="">Todos</option>@for (status of quoteStatuses; track status) { <option [value]="status">{{ quoteStatusLabel(status) }}</option> }</select></label>
+      <label class="field filter--wide"><span>Cliente</span><select class="input" name="reportQuoteCustomer" [(ngModel)]="customerId"><option value="">Todos</option>@for (customer of customers(); track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
+    }
+    @if (activeReport() === 'payments-by-method') {
+      <label class="field"><span>Método</span><select class="input" name="reportPaymentMethod" [(ngModel)]="paymentMethod"><option value="">Todos</option>@for (method of paymentMethods; track method) { <option [value]="method">{{ paymentMethodLabel(method) }}</option> }</select></label>
+      <label class="field"><span>Estado</span><select class="input" name="reportPaymentStatus" [(ngModel)]="paymentStatus"><option value="">Todos</option>@for (status of paymentStatuses; track status) { <option [value]="status">{{ paymentStatusLabel(status) }}</option> }</select></label>
+      <label class="field"><span>Registrado por</span><select class="input" name="reportPaymentCreator" [(ngModel)]="paymentCreatorId"><option value="">Todos</option>@for (user of paymentCreators(); track user.id) { <option [value]="user.id">{{ user.firstName }} {{ user.lastName }}</option> }</select></label>
+    }
+
+    <div class="filter-actions"><button class="btn btn--primary" type="submit" [disabled]="loading()">Aplicar</button><button class="btn btn--ghost" type="button" (click)="clearFilters()" [disabled]="loading()">Limpiar</button></div>
+  </form>
+
+  <div class="table-wrap">
+    @if (activeReport() === 'sales-by-product') {
+      <table class="data-table"><thead><tr><th>Producto</th><th>Categoría</th><th class="number">Cantidad</th><th class="number">Total vendido</th></tr></thead><tbody>
+        @if (loading()) { <tr><td colspan="4" class="empty">Actualizando reporte…</td></tr> }
+        @else if (!productRows().length) { <tr><td colspan="4" class="empty">No hay ventas por producto para los filtros seleccionados.</td></tr> }
+        @else { @for (row of productRows(); track row.productId) { <tr><td><div class="primary-cell"><strong>{{ row.productName }}</strong><small class="mono">{{ row.sku }}</small></div></td><td>{{ row.categoryName }}</td><td class="number">{{ row.quantitySold }}</td><td class="number"><strong>{{ formatMoney(row.totalSold) }}</strong></td></tr> } }
+      </tbody></table>
+    }
+    @if (activeReport() === 'sales-by-customer') {
+      <table class="data-table"><thead><tr><th>Cliente</th><th>Tipo</th><th class="number">Ventas</th><th class="number">Vendido</th><th class="number">Pagado</th><th class="number">Saldo</th></tr></thead><tbody>
+        @if (loading()) { <tr><td colspan="6" class="empty">Actualizando reporte…</td></tr> }
+        @else if (!customerRows().length) { <tr><td colspan="6" class="empty">No hay ventas por cliente para los filtros seleccionados.</td></tr> }
+        @else { @for (row of customerRows(); track row.customerId) { <tr><td><div class="primary-cell"><strong>{{ row.customerName }}</strong><small>{{ row.customerDocumentNumber || 'Sin documento' }}</small></div></td><td>{{ customerTypeLabel(row.customerType) }}</td><td class="number">{{ row.saleCount }}</td><td class="number"><strong>{{ formatMoney(row.totalSold) }}</strong></td><td class="number">{{ formatMoney(row.totalPaid) }}</td><td class="number" [class.danger-text]="+row.balance > 0">{{ formatMoney(row.balance) }}</td></tr> } }
+      </tbody></table>
+    }
+    @if (activeReport() === 'sales-by-seller') {
+      <table class="data-table"><thead><tr><th>Vendedor</th><th class="number">Ventas</th><th class="number">Vendido</th><th class="number">Cobrado</th><th class="number">Cotizaciones convertidas</th></tr></thead><tbody>
+        @if (loading()) { <tr><td colspan="5" class="empty">Actualizando reporte…</td></tr> }
+        @else if (!sellerRows().length) { <tr><td colspan="5" class="empty">No hay ventas por vendedor para los filtros seleccionados.</td></tr> }
+        @else { @for (row of sellerRows(); track row.seller.id) { <tr><td><div class="primary-cell"><strong>{{ row.seller.firstName }} {{ row.seller.lastName }}</strong><small>{{ row.seller.username }}</small></div></td><td class="number">{{ row.saleCount }}</td><td class="number"><strong>{{ formatMoney(row.totalSold) }}</strong></td><td class="number">{{ formatMoney(row.totalCollected) }}</td><td class="number">{{ row.convertedQuotes }}</td></tr> } }
+      </tbody></table>
+    }
+    @if (activeReport() === 'quotes-by-status') {
+      <table class="data-table"><thead><tr><th>Cotización</th><th>Cliente</th><th>Estado</th><th>Venta resultante</th><th class="number">Total</th></tr></thead><tbody>
+        @if (loading()) { <tr><td colspan="5" class="empty">Actualizando reporte…</td></tr> }
+        @else if (!quoteRows().length) { <tr><td colspan="5" class="empty">No hay cotizaciones para los filtros seleccionados.</td></tr> }
+        @else { @for (row of quoteRows(); track row.quoteId) { <tr><td><strong class="mono">{{ row.quoteNumber }}</strong></td><td>{{ row.customerName }}</td><td><span class="badge" [class.badge--ok]="row.status === 'CONVERTED' || row.status === 'ACCEPTED'" [class.badge--warn]="row.status === 'PENDING'" [class.badge--danger]="row.status === 'REJECTED' || row.status === 'EXPIRED'">{{ quoteStatusLabel(row.status) }}</span></td><td>{{ row.resultingSale?.saleNumber || '—' }}</td><td class="number"><strong>{{ formatMoney(row.total) }}</strong></td></tr> } }
+      </tbody></table>
+    }
+    @if (activeReport() === 'payments-by-method') {
+      <table class="data-table payments-table"><thead><tr><th>Fecha</th><th>Venta</th><th>Cliente</th><th>Método</th><th>Referencia</th><th>Registrado por</th><th>Estado</th><th class="number">Monto</th></tr></thead><tbody>
+        @if (loading()) { <tr><td colspan="8" class="empty">Actualizando reporte…</td></tr> }
+        @else if (!paymentRows().length) { <tr><td colspan="8" class="empty">No hay pagos para los filtros seleccionados.</td></tr> }
+        @else { @for (row of paymentRows(); track row.paymentId) { <tr><td>{{ formatDate(row.paidAt) }}</td><td><strong class="mono">{{ row.saleNumber }}</strong></td><td>{{ row.customerName }}</td><td>{{ paymentMethodLabel(row.method) }}</td><td>{{ row.reference || '—' }}</td><td>{{ row.createdBy.firstName }} {{ row.createdBy.lastName }}</td><td><span class="badge" [class.badge--ok]="row.status === 'ACTIVE'" [class.badge--danger]="row.status === 'CANCELLED'">{{ paymentStatusLabel(row.status) }}</span></td><td class="number"><strong>{{ formatMoney(row.amount) }}</strong></td></tr> } }
+      </tbody></table>
+    }
+  </div>
+
+  <footer class="pagination"><span>{{ range() }}</span><div class="pagination__actions"><label>Filas <select class="input" name="reportPageSize" [(ngModel)]="pageSize" (ngModelChange)="loadReport(1)">@for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }</select></label><button class="btn btn--ghost" type="button" [disabled]="(result()?.page ?? 1) <= 1 || loading()" (click)="previousPage()">Anterior</button><button class="btn btn--ghost" type="button" [disabled]="(result()?.page ?? 1) >= (result()?.totalPages ?? 1) || loading()" (click)="nextPage()">Siguiente</button></div></footer>
+</section>

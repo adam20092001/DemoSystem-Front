@@ -212,6 +212,14 @@
         <input class="input" name="lowStockSearch" [(ngModel)]="lowStockSearch" placeholder="SKU o producto">
       </label>
       <label class="field">
+        <span>Marca</span>
+        <input class="input" name="lowStockBrand" [(ngModel)]="lowStockBrand" placeholder="Todas">
+      </label>
+      <label class="field">
+        <span>Estado</span>
+        <select class="input" name="lowStockStatus" [(ngModel)]="lowStockStatus"><option value="">Activos</option><option value="INACTIVE">Inactivos</option></select>
+      </label>
+      <label class="field">
         <span>Categoría</span>
         <select class="input" name="lowStockCategory" [(ngModel)]="lowStockCategory">
           <option value="">Todas</option>
@@ -243,15 +251,16 @@
             <th>Categoría</th>
             <th>Stock actual</th>
             <th>Stock mínimo</th>
+            <th>Faltante</th>
             <th>Nivel</th>
             @if (canWrite()) { <th class="actions-heading">Acción</th> }
           </tr>
         </thead>
         <tbody>
           @if (loadingLowStock()) {
-            <tr><td [attr.colspan]="canWrite() ? 6 : 5" class="empty-state">Cargando alertas…</td></tr>
+            <tr><td [attr.colspan]="canWrite() ? 7 : 6" class="empty-state">Cargando alertas…</td></tr>
           } @else if ((lowStock()?.data?.length ?? 0) === 0) {
-            <tr><td [attr.colspan]="canWrite() ? 6 : 5" class="empty-state">No hay productos bajo su stock mínimo.</td></tr>
+            <tr><td [attr.colspan]="canWrite() ? 7 : 6" class="empty-state">No hay productos bajo su stock mínimo.</td></tr>
           } @else {
             @for (item of lowStock()!.data; track item.id) {
               <tr>
@@ -262,6 +271,7 @@
                 <td>{{ item.category.name }}</td>
                 <td><strong class="stock-number">{{ item.stockCurrent }} {{ item.unit.abbreviation }}</strong></td>
                 <td><span class="mono">{{ item.stockMinimum }} {{ item.unit.abbreviation }}</span></td>
+                <td><strong class="danger-text">{{ item.difference }} {{ item.unit.abbreviation }}</strong></td>
                 <td>
                   <span class="badge" [class.badge--danger]="stockLevel(item) === 'zero'" [class.badge--warn]="stockLevel(item) === 'low'">
                     {{ stockLevel(item) === 'zero' ? 'Sin stock' : 'Bajo mínimo' }}

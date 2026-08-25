@@ -41,7 +41,7 @@
 
 .filter-actions { display: flex; gap: 6px; padding-bottom: 1px; }
 
-.table-wrap { overflow-x: auto; }
+.table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
 table { width: 100%; min-width: 920px; border-collapse: collapse; }
 th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
 th {
@@ -202,4 +202,13 @@ tbody tr:last-child td { border-bottom: 0; }
   .page-buttons .btn { flex: 1; }
   .form-grid { grid-template-columns: 1fr; }
   .modal { padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  .modal-backdrop { align-items: end; padding: 10px; }
+  .modal { max-height: calc(100dvh - 20px); padding: 18px 16px; }
+  .modal-actions { flex-wrap: wrap; }
+  .modal-actions .btn { flex: 1 1 130px; }
+  .temporary-password { align-items: stretch; flex-direction: column; }
+  .temporary-password .btn { width: 100%; }
 }

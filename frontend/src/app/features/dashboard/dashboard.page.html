@@ -1,70 +1,127 @@
 <header class="page-head">
   <div>
-    <p class="eyebrow">Resumen</p>
+    <p class="eyebrow">Resumen operativo</p>
     <h1>Hola, {{ auth.userName() }}</h1>
-    <p class="page-sub">Consulta el estado general de tus productos y servicios.</p>
+    <p class="page-sub">Revisa ventas, cobranza, cotizaciones, inventario y saldos pendientes.</p>
   </div>
-  <a routerLink="/products" class="btn btn--primary">Abrir catálogo</a>
+  <button class="btn btn--primary" type="button" (click)="loadDashboard()" [disabled]="loading()">
+    {{ loading() ? 'Actualizando…' : 'Actualizar' }}
+  </button>
 </header>
 
 @if (error()) {
   <div class="notice notice--error" role="alert">
     <span>{{ error() }}</span>
-    <button class="btn btn--ghost" type="button" (click)="reload()" [disabled]="loading()">Reintentar</button>
+    <button type="button" aria-label="Cerrar mensaje" (click)="error.set(null)">×</button>
   </div>
 }
 
-<section class="metrics" aria-label="Resumen del catálogo">
-  @if (loading() && metrics().length === 0) {
-    @for (item of [1, 2, 3, 4]; track item) {
-      <article class="metric metric--loading surface">
-        <span></span><strong>—</strong>
-      </article>
-    }
-  } @else {
-    @for (metric of metrics(); track metric.label) {
-      <a class="metric surface" [routerLink]="metric.route">
-        <p>{{ metric.label }}</p>
-        <strong class="mono">{{ metric.value }}</strong>
-        <small>Información actualizada</small>
+<form class="period-filter surface" (submit)="applyPeriod($event)">
+  <div class="period-copy">
+    <span>Período consultado</span>
+    <strong>
+      @if (dashboard(); as data) {
+        {{ formatDate(data.period.from) }} — {{ formatDate(data.period.to) }}
+      } @else {
+        Pendiente
+      }
+    </strong>
+  </div>
+  <label class="field"><span>Desde</span><input class="input" type="date" name="dashboardFrom" [(ngModel)]="from"></label>
+  <label class="field"><span>Hasta</span><input class="input" type="date" name="dashboardTo" [(ngModel)]="to"></label>
+  <div class="period-actions">
+    <button class="btn btn--ghost" type="submit" [disabled]="loading()">Aplicar</button>
+    <button class="btn btn--quiet" type="button" (click)="clearPeriod()" [disabled]="loading()">Mes actual</button>
+  </div>
+</form>
+
+@if (loading() && !dashboard()) {
+  <section class="loading-state surface" aria-live="polite">Preparando el resumen…</section>
+} @else if (dashboard(); as data) {
+  <section class="metrics" aria-label="Indicadores principales">
+    @if (data.sales) {
+      <a class="metric surface" routerLink="/sales">
+        <p>Ventas</p><strong>{{ formatMoney(data.sales.total) }}</strong><small>{{ data.sales.count }} operaciones activas</small>
       </a>
     }
-  }
-</section>
+    @if (data.collections) {
+      <a class="metric surface" routerLink="/payments">
+        <p>Cobrado</p><strong>{{ formatMoney(data.collections.total) }}</strong><small>{{ data.collections.count }} pagos activos</small>
+      </a>
+    }
+    @if (data.receivables) {
+      <a class="metric surface" routerLink="/payments">
+        <p>Por cobrar</p><strong>{{ formatMoney(data.receivables.totalBalance) }}</strong><small>{{ data.receivables.count }} ventas con saldo</small>
+      </a>
+    }
+    @if (data.quotes) {
+      <a class="metric surface" routerLink="/quotes">
+        <p>Cotizaciones</p><strong>{{ data.quotes.total }}</strong><small>Emitidas en el período</small>
+      </a>
+    }
+    @if (data.lowStock) {
+      <a class="metric surface" routerLink="/inventory">
+        <p>Stock bajo</p><strong>{{ data.lowStock.count }}</strong><small>Productos requieren atención</small>
+      </a>
+    }
+  </section>
 
-<section class="dashboard-grid">
-  <article class="panel surface">
-    <header class="panel-head">
-      <div>
-        <p class="eyebrow">Estado general</p>
-        <h2>Disponibilidad</h2>
-      </div>
-      <button class="btn btn--ghost btn--small" type="button" (click)="reload()" [disabled]="loading()">
-        {{ loading() ? 'Actualizando…' : 'Actualizar' }}
-      </button>
-    </header>
+  <section class="dashboard-grid">
+    @if (data.lowStock) {
+      <article class="panel surface">
+        <header class="panel-head">
+          <div><p class="eyebrow">Inventario actual</p><h2>Productos con stock bajo</h2></div>
+          <a routerLink="/inventory" class="text-link">Ver inventario</a>
+        </header>
+        @if (!data.lowStock.items.length) {
+          <p class="empty-state">No hay productos por debajo del mínimo.</p>
+        } @else {
+          <div class="compact-list">
+            @for (item of data.lowStock.items; track item.productId) {
+              <div>
+                <span><strong>{{ item.productName }}</strong><small class="mono">{{ item.sku }}</small></span>
+                <span class="list-value"><strong>{{ item.stockCurrent }}</strong><small>Faltan {{ item.difference }}</small></span>
+              </div>
+            }
+          </div>
+        }
+      </article>
+    }
 
-    <dl class="health-list">
-      <div>
-        <dt>Acceso</dt>
-        <dd><span class="status-dot" [class.status-dot--ok]="health()?.application === 'up'"></span>{{ healthLabel(health()?.application) }}</dd>
-      </div>
-      <div>
-        <dt>Información</dt>
-        <dd><span class="status-dot" [class.status-dot--ok]="health()?.database === 'up'"></span>{{ healthLabel(health()?.database) }}</dd>
-      </div>
-      <div>
-        <dt>Última actualización</dt>
-        <dd class="mono">{{ health()?.timestamp ? (health()?.timestamp | date:'dd/MM/yyyy, HH:mm:ss') : 'Pendiente' }}</dd>
-      </div>
-    </dl>
-  </article>
+    @if (data.receivables) {
+      <article class="panel surface">
+        <header class="panel-head">
+          <div><p class="eyebrow">Cobranza actual</p><h2>Saldos más antiguos</h2></div>
+          <a routerLink="/payments" class="text-link">Ver pagos</a>
+        </header>
+        @if (!data.receivables.oldest.length) {
+          <p class="empty-state">No hay cuentas pendientes de cobro.</p>
+        } @else {
+          <div class="compact-list">
+            @for (item of data.receivables.oldest; track item.saleId) {
+              <div>
+                <span><strong>{{ item.customerName }}</strong><small class="mono">{{ item.saleNumber }}</small></span>
+                <span class="list-value"><strong>{{ formatMoney(item.balanceDue) }}</strong><small>{{ item.daysOutstanding }} días</small></span>
+              </div>
+            }
+          </div>
+        }
+      </article>
+    }
 
-  <article class="panel surface">
-    <p class="eyebrow">Funciones disponibles</p>
-    <h2>Operación comercial disponible</h2>
-    <p class="availability-copy">
-      Ya puedes administrar clientes, cotizaciones, ventas, pagos, contabilidad, productos e inventario desde un solo lugar.
-    </p>
-  </article>
-</section>
+    @if (data.quotes) {
+      <article class="panel surface quotes-panel">
+        <header class="panel-head"><div><p class="eyebrow">Actividad comercial</p><h2>Cotizaciones por estado</h2></div></header>
+        @if (!data.quotes.byStatus.length) {
+          <p class="empty-state">No hay cotizaciones en el período.</p>
+        } @else {
+          <div class="status-grid">
+            @for (item of data.quotes.byStatus; track item.status) {
+              <div><span>{{ quoteStatusLabel(item.status) }}</span><strong>{{ item.count }}</strong></div>
+            }
+          </div>
+        }
+      </article>
+    }
+  </section>
+}
