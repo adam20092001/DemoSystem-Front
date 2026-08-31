@@ -1,0 +1,49 @@
+<header class="page-header"><div><p class="eyebrow">Administración</p><h1>Configuración</h1><p>Datos de la empresa, moneda, impuestos y numeración de documentos.</p></div></header>
+
+@if (notice()) { <div class="notice notice--ok"><span>{{ notice() }}</span><button type="button" (click)="notice.set(null)">×</button></div> }
+@if (error()) { <div class="notice notice--error"><span>{{ error() }}</span><button type="button" (click)="error.set(null)">×</button></div> }
+@if (!canEdit()) { <div class="read-only">Estás consultando esta información en modo lectura.</div> }
+
+@if (loading()) { <section class="surface loading">Cargando configuración…</section> } @else {
+<form class="settings-grid" (submit)="saveConfiguration($event)">
+  <section class="surface settings-card identity-card">
+    <header><p class="eyebrow">Empresa</p><h2>Identidad y contacto</h2></header>
+    <div class="form-grid">
+      <label class="field span-2"><span>Razón social *</span><input class="input" name="businessName" [(ngModel)]="form.businessName" maxlength="150" [disabled]="!canEdit()"></label>
+      <label class="field"><span>Nombre comercial</span><input class="input" name="tradeName" [(ngModel)]="form.tradeName" maxlength="150" [disabled]="!canEdit()"></label>
+      <label class="field"><span>RUC</span><input class="input" name="taxId" [(ngModel)]="form.taxId" maxlength="20" [disabled]="!canEdit()"></label>
+      <label class="field span-2"><span>Dirección</span><input class="input" name="address" [(ngModel)]="form.address" maxlength="300" [disabled]="!canEdit()"></label>
+      <label class="field"><span>Teléfono</span><input class="input" name="phone" [(ngModel)]="form.phone" maxlength="30" [disabled]="!canEdit()"></label>
+      <label class="field"><span>Correo</span><input class="input" type="email" name="email" [(ngModel)]="form.email" maxlength="150" [disabled]="!canEdit()"></label>
+    </div>
+  </section>
+
+  <section class="surface settings-card fiscal-card">
+    <header><p class="eyebrow">Comercial</p><h2>Moneda e impuestos</h2></header>
+    <div class="form-grid">
+      <label class="field"><span>Moneda *</span><input class="input mono" name="currencyCode" [(ngModel)]="form.currencyCode" maxlength="3" [disabled]="!canEdit()"></label>
+      <label class="field"><span>Símbolo *</span><input class="input" name="currencySymbol" [(ngModel)]="form.currencySymbol" maxlength="5" [disabled]="!canEdit()"></label>
+      <label class="toggle span-2"><input type="checkbox" name="taxEnabled" [(ngModel)]="form.taxEnabled" [disabled]="!canEdit()"><span><strong>Aplicar IGV</strong><small>Se aplicará a documentos comerciales nuevos.</small></span></label>
+      <label class="field"><span>Tasa de IGV (%)</span><input class="input" name="taxRate" [(ngModel)]="form.taxRate" inputmode="decimal" [disabled]="!canEdit() || !form.taxEnabled"></label>
+      <label class="field"><span>Descuento máximo (%)</span><input class="input" name="maxDiscountPercent" [(ngModel)]="form.maxDiscountPercent" inputmode="decimal" [disabled]="!canEdit()"></label>
+      <label class="field span-2"><span>Vigencia predeterminada de cotizaciones (días)</span><input class="input" type="number" name="quoteValidityDays" [(ngModel)]="form.quoteValidityDays" min="1" step="1" [disabled]="!canEdit()"></label>
+    </div>
+    @if (canEdit()) { <footer><button class="btn btn--primary" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar configuración' }}</button></footer> }
+  </section>
+</form>
+
+<section class="surface sequences">
+  <header><div><p class="eyebrow">Numeración</p><h2>Correlativos</h2><p>El número actual es el último documento emitido y nunca puede disminuir.</p></div></header>
+  <div class="sequence-list">
+    @for (sequence of sequences(); track sequence.id) {
+      <article class="sequence-row">
+        <div class="sequence-name"><strong>{{ sequenceLabel(sequence.documentType) }}</strong><small>Próximo: <span class="mono">{{ nextPreview(sequence) }}</span></small></div>
+        <label class="field"><span>Prefijo</span><input class="input mono" [name]="'prefix-' + sequence.id" [(ngModel)]="sequenceForms[sequence.documentType].prefix" maxlength="10" [disabled]="!canEdit()"></label>
+        <label class="field"><span>Dígitos</span><input class="input" type="number" [name]="'padding-' + sequence.id" [(ngModel)]="sequenceForms[sequence.documentType].padding" min="1" max="12" [disabled]="!canEdit()"></label>
+        <label class="field"><span>Último número</span><input class="input" type="number" [name]="'number-' + sequence.id" [(ngModel)]="sequenceForms[sequence.documentType].currentNumber" [min]="sequence.currentNumber" [disabled]="!canEdit()"></label>
+        @if (canEdit()) { <button class="btn btn--ghost" type="button" (click)="saveSequence(sequence)" [disabled]="saving()">Guardar</button> }
+      </article>
+    } @empty { <p class="empty">No hay correlativos configurados.</p> }
+  </div>
+</section>
+}

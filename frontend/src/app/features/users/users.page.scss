@@ -75,6 +75,8 @@ tbody tr:last-child td { border-bottom: 0; }
 .identity small { display: block; margin-top: 2px; color: var(--muted); font-size: 11.5px; }
 
 .pending-password { display: block; margin-top: 5px; color: var(--warn-ink); font-size: 10.5px; }
+.role-list { display: flex; flex-wrap: wrap; gap: 5px; min-width: 150px; }
+.role-chip { padding: 3px 7px; border-radius: var(--r-sm); background: var(--brand-tint); color: var(--brand-ink); font-size: 10.5px; font-weight: 700; }
 .muted { color: var(--muted); }
 
 .row-actions { display: flex; justify-content: flex-end; gap: 5px; }
@@ -160,6 +162,11 @@ tbody tr:last-child td { border-bottom: 0; }
 .user-form { display: grid; gap: 16px; margin-top: 22px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .field-help { display: block; margin-top: 6px; color: var(--muted); font-size: 10.5px; }
+.roles-field { min-width: 0; margin: 0; padding: 13px; border: 1px solid var(--line-strong); border-radius: var(--r-md); }
+.roles-field legend { padding: 0 5px; color: var(--ink-2); font-size: 12px; font-weight: 600; }
+.role-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 14px; }
+.role-options label { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13px; }
+.role-options input { width: 16px; height: 16px; accent-color: var(--brand); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .confirmation-copy { margin: 20px 0 6px; color: var(--ink-2); line-height: 1.6; }
 
@@ -201,6 +208,7 @@ tbody tr:last-child td { border-bottom: 0; }
   .page-buttons { width: 100%; }
   .page-buttons .btn { flex: 1; }
   .form-grid { grid-template-columns: 1fr; }
+  .role-options { grid-template-columns: 1fr; }
   .modal { padding: 20px; }
 }
 

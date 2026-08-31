@@ -8,7 +8,7 @@ export interface User {
   lastName: string;
   username: string;
   email: string;
-  role: UserRole;
+  roles: UserRole[];
   status: UserStatus;
   mustChangePassword: boolean;
   lastLoginAt: string | null;
@@ -30,14 +30,14 @@ export interface CreateUserRequest {
   username: string;
   email: string;
   temporaryPassword: string;
-  roleName: UserRole;
+  roleNames: UserRole[];
 }
 
 export interface UpdateUserRequest {
   firstName: string;
   lastName: string;
   email: string;
-  roleName: UserRole;
+  roleNames: UserRole[];
 }
 
 export interface ResetPasswordResponse {

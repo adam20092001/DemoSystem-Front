@@ -38,7 +38,17 @@
         <span class="context-title">{{ auth.userName() }}</span>
         <span class="context-sub">{{ roleLabel(auth.role()) }}</span>
       </div>
+      @if (auth.roles().length > 1) {
+        <label class="role-switcher">
+          <span>Rol activo</span>
+          <select [ngModel]="auth.role()" (ngModelChange)="switchRole($event)" [disabled]="switchingRole()" aria-label="Cambiar rol activo">
+            @for (role of auth.roles(); track role) { <option [ngValue]="role">{{ roleLabel(role) }}</option> }
+          </select>
+        </label>
+      }
     </header>
+
+    @if (roleError()) { <div class="role-error" role="alert">{{ roleError() }} <button type="button" (click)="roleError.set(null)">×</button></div> }
 
     <section class="page"><router-outlet /></section>
   </main>

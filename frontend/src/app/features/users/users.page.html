@@ -68,7 +68,7 @@
       <thead>
         <tr>
           <th>Usuario</th>
-          <th>Rol</th>
+          <th>Roles</th>
           <th>Estado</th>
           <th>Último acceso</th>
           <th class="actions-heading">Acciones</th>
@@ -89,7 +89,7 @@
                   </span>
                 </div>
               </td>
-              <td>{{ roleLabel(user.role) }}</td>
+              <td><div class="role-list">@for (role of user.roles; track role) { <span class="role-chip">{{ roleLabel(role) }}</span> }</div></td>
               <td>
                 <span class="badge" [class]="statusClass(user.status)">
                   {{ statusLabel(user.status) }}
@@ -221,14 +221,15 @@
           <input class="input" name="email" type="email" [(ngModel)]="userForm.email" maxlength="150" [disabled]="actionLoading()" required>
         </label>
 
-        <label class="field">
-          <span>Rol</span>
-          <select class="input" name="roleName" [(ngModel)]="userForm.roleName" [disabled]="actionLoading()">
+        <fieldset class="roles-field" [disabled]="actionLoading()">
+          <legend>Roles</legend>
+          <div class="role-options">
             @for (role of roles; track role) {
-              <option [value]="role">{{ roleLabel(role) }}</option>
+              <label><input type="checkbox" [name]="'role-' + role" [checked]="hasRole(role)" (change)="toggleRole(role, $any($event.target).checked)"> {{ roleLabel(role) }}</label>
             }
-          </select>
-        </label>
+          </div>
+          <small class="field-help">El usuario puede tener uno o varios roles.</small>
+        </fieldset>
 
         @if (formMode() === 'create') {
           <label class="field">

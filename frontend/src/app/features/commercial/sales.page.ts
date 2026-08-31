@@ -12,6 +12,8 @@ import {
   SaleStatus,
 } from './commercial.model';
 import { CommercialService } from './commercial.service';
+import { ElectronicDocument, FiscalDocumentType, FiscalSeries } from '../electronic-documents/electronic-document.model';
+import { ElectronicDocumentsService } from '../electronic-documents/electronic-documents.service';
 import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHODS,
@@ -35,6 +37,7 @@ type SaleAction = 'cancel' | 'mark-delivered' | 'mark-observed';
 export class SalesPage implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly commercial = inject(CommercialService);
+  protected readonly electronicDocuments = inject(ElectronicDocumentsService);
   protected readonly canWrite = computed(() => ['ADMIN', 'SELLER'].includes(this.auth.role()));
   protected readonly isAdmin = computed(() => this.auth.role() === 'ADMIN');
   protected readonly result = signal<PaginatedResponse<SaleListItem> | null>(null);
@@ -45,6 +48,9 @@ export class SalesPage implements OnInit {
   protected readonly notice = signal<string | null>(null);
   protected readonly pendingAction = signal<{ action: SaleAction; sale: SaleListItem | SaleDetail } | null>(null);
   protected readonly paymentSale = signal<SaleListItem | SaleDetail | null>(null);
+  protected readonly fiscalSale = signal<SaleListItem | SaleDetail | null>(null);
+  protected readonly fiscalSeries = signal<FiscalSeries[]>([]);
+  protected readonly issuedDocument = signal<ElectronicDocument | null>(null);
 
   protected readonly statuses: SaleStatus[] = ['ACTIVE', 'CANCELLED'];
   protected readonly paymentStatuses: SalePaymentStatus[] = ['UNPAID', 'PARTIALLY_PAID', 'PAID'];
@@ -63,6 +69,8 @@ export class SalesPage implements OnInit {
   protected paymentMethod: PaymentMethod = 'CASH';
   protected paymentAmount = '';
   protected paymentReference = '';
+  protected fiscalDocumentType: FiscalDocumentType = 'FACTURA';
+  protected selectedFiscalSeries = '';
 
   ngOnInit(): void { this.loadSales(); }
 
@@ -132,7 +140,7 @@ export class SalesPage implements OnInit {
     }).pipe(take(1), finalize(() => this.actionLoading.set(false))).subscribe({
       next: result => {
         this.paymentSale.set(null);
-        this.notice.set(`Pago registrado en ${result.sale.number}. Saldo: ${money(result.sale.balanceDue)}.`);
+        this.notice.set(`Pago registrado en ${result.sale.number}. Saldo: ${money(result.sale.balanceDue, sale.currencyCode)}.`);
         this.loadSales(this.result()?.page ?? 1);
         if (this.detail()?.id === sale.id) this.openDetail(sale.id);
       },
@@ -140,7 +148,35 @@ export class SalesPage implements OnInit {
     });
   }
 
-  protected formatMoney(value: string | number): string { return money(value); }
+  protected openFiscalIssue(sale: SaleListItem | SaleDetail): void {
+    this.fiscalSale.set(sale);
+    this.fiscalDocumentType = sale.customerDocumentNumber?.length === 11 ? 'FACTURA' : 'BOLETA';
+    this.selectedFiscalSeries = '';
+    this.error.set(null);
+    this.loadFiscalSeries();
+  }
+
+  protected changeFiscalType(type: FiscalDocumentType): void {
+    this.fiscalDocumentType = type;
+    this.selectedFiscalSeries = '';
+    this.loadFiscalSeries();
+  }
+
+  protected submitFiscalIssue(event: Event): void {
+    event.preventDefault();
+    const sale = this.fiscalSale();
+    if (!sale || !this.selectedFiscalSeries) { this.error.set('Selecciona una serie para emitir el comprobante.'); return; }
+    this.actionLoading.set(true);
+    this.error.set(null);
+    this.electronicDocuments.issue(sale.id, this.fiscalDocumentType, this.selectedFiscalSeries)
+      .pipe(take(1), finalize(() => this.actionLoading.set(false)))
+      .subscribe({
+        next: document => { this.fiscalSale.set(null); this.issuedDocument.set(document); this.notice.set(`${document.fullNumber} fue emitido correctamente.`); },
+        error: error => this.error.set(requestErrorMessage(error)),
+      });
+  }
+
+  protected formatMoney(value: string | number, currency = 'PEN'): string { return money(value, currency); }
   protected formatDate(value: string): string { return dateTime(value); }
   protected range(): string { return pageRange(this.result()); }
   protected methodLabel(value: PaymentMethod): string { return PAYMENT_METHOD_LABELS[value]; }
@@ -154,6 +190,14 @@ export class SalesPage implements OnInit {
   protected visibleBalanceCount(): number { return this.result()?.data.filter(sale => this.hasBalance(sale)).length ?? 0; }
   protected visibleDeliveryCount(status: SaleDeliveryStatus): number { return this.result()?.data.filter(sale => sale.deliveryStatus === status).length ?? 0; }
   protected hasBalance(sale: SaleListItem | SaleDetail): boolean { return Number(sale.balanceDue) > 0; }
+
+  private loadFiscalSeries(): void {
+    this.actionLoading.set(true);
+    this.electronicDocuments.listSeries(this.fiscalDocumentType).pipe(take(1), finalize(() => this.actionLoading.set(false))).subscribe({
+      next: series => { this.fiscalSeries.set(series); this.selectedFiscalSeries = series[0]?.series ?? ''; },
+      error: error => this.error.set(requestErrorMessage(error)),
+    });
+  }
 
   protected loadSales(page = 1): void {
     this.loading.set(true);

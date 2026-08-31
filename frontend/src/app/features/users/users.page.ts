@@ -31,7 +31,7 @@ interface UserForm {
   username: string;
   email: string;
   temporaryPassword: string;
-  roleName: UserRole;
+  roleNames: UserRole[];
 }
 
 interface ConfirmAction {
@@ -143,7 +143,7 @@ export class UsersPage implements OnInit {
       username: user.username,
       email: user.email,
       temporaryPassword: '',
-      roleName: user.role,
+      roleNames: [...user.roles],
     };
     this.editingUser.set(user);
     this.formMode.set('edit');
@@ -175,7 +175,7 @@ export class UsersPage implements OnInit {
         username: this.userForm.username.trim(),
         email: this.userForm.email.trim(),
         temporaryPassword: this.userForm.temporaryPassword,
-        roleName: this.userForm.roleName,
+        roleNames: this.userForm.roleNames,
       };
       request$ = this.usersService.create(request);
     } else if (mode === 'edit' && editing) {
@@ -183,7 +183,7 @@ export class UsersPage implements OnInit {
         firstName: this.userForm.firstName.trim(),
         lastName: this.userForm.lastName.trim(),
         email: this.userForm.email.trim(),
-        roleName: this.userForm.roleName,
+        roleNames: this.userForm.roleNames,
       };
       request$ = this.usersService.update(editing.id, request);
     } else {
@@ -279,6 +279,16 @@ export class UsersPage implements OnInit {
     return ROLE_LABELS[role];
   }
 
+  protected toggleRole(role: UserRole, checked: boolean): void {
+    this.userForm.roleNames = checked
+      ? [...new Set([...this.userForm.roleNames, role])]
+      : this.userForm.roleNames.filter(item => item !== role);
+  }
+
+  protected hasRole(role: UserRole): boolean {
+    return this.userForm.roleNames.includes(role);
+  }
+
   protected statusLabel(status: UserStatus): string {
     return STATUS_LABELS[status];
   }
@@ -331,7 +341,7 @@ function emptyForm(): UserForm {
     username: '',
     email: '',
     temporaryPassword: '',
-    roleName: 'SELLER',
+    roleNames: ['SELLER'],
   };
 }
 
@@ -342,6 +352,7 @@ function validateForm(form: UserForm, mode: FormMode | null): string | null {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
     return 'Ingresa un correo válido.';
   }
+  if (!form.roleNames.length) return 'Selecciona al menos un rol.';
   if (mode === 'create') {
     if (form.username.trim().length < 3) {
       return 'El usuario debe tener al menos 3 caracteres.';

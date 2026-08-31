@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { take } from 'rxjs';
+import { FormsModule } from '@angular/forms';
+import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavigationItem, UserRole } from '../../core/models/navigation.model';
 
@@ -17,6 +18,7 @@ const ICONS: Record<string, string> = {
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h12v4M3 7v10a2 2 0 0 0 2 2h14V9H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14" r="1.2"/>',
   book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22z"/>',
   chart: '<path d="M4 20V4M4 20h16M8 20v-6M12 20v-9M16 20v-4"/>',
+  invoice: '<path d="M6 3h12v18l-2-1.4L14 21l-2-1.4L10 21l-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 6.6 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.4H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 6.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 .9 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
 };
 
@@ -29,7 +31,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [FormsModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app-shell.component.html',
   styleUrl: './app-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,6 +41,8 @@ export class AppShellComponent {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
   protected readonly menuOpen = signal(false);
+  protected readonly switchingRole = signal(false);
+  protected readonly roleError = signal<string | null>(null);
   private readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'];
 
   protected readonly nav: NavigationItem[] = [
@@ -52,8 +56,9 @@ export class AppShellComponent {
     { label: 'Pagos', route: '/payments', icon: 'wallet', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Contabilidad', route: '/accounting', icon: 'book', roles: ['ADMIN', 'MANAGEMENT'] },
     { label: 'Reportes', route: '/reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'SELLER'] },
+    { label: 'Comprobantes', route: '/electronic-documents', icon: 'invoice', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Usuarios', route: '/users', icon: 'users', roles: ['ADMIN'] },
-    { label: 'Configuración', route: '/settings', icon: 'settings', roles: ['ADMIN'] },
+    { label: 'Configuración', route: '/settings', icon: 'settings', roles: ['ADMIN', 'MANAGEMENT'] },
   ];
 
   protected readonly visibleNav = computed(() => this.nav.filter(item => item.roles.includes(this.auth.role())));
@@ -75,6 +80,16 @@ export class AppShellComponent {
 
   protected roleLabel(role: UserRole): string {
     return ROLE_LABELS[role];
+  }
+
+  protected switchRole(role: UserRole): void {
+    if (role === this.auth.role() || this.switchingRole()) return;
+    this.switchingRole.set(true);
+    this.roleError.set(null);
+    this.auth.switchRole(role).pipe(take(1), finalize(() => this.switchingRole.set(false))).subscribe({
+      next: () => this.router.navigateByUrl('/dashboard'),
+      error: () => this.roleError.set('No se pudo cambiar el rol activo.'),
+    });
   }
 
   protected logout(): void {

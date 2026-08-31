@@ -128,7 +128,7 @@ export class QuotesPage implements OnInit {
     const items = this.form.items.map(item => ({ productId: item.productId, quantity: item.quantity.trim() }));
     if (editing) {
       const request: UpdateQuoteRequest = {
-        expirationDate: this.form.expirationDate,
+        ...(this.form.expirationDate ? { expirationDate: this.form.expirationDate } : {}),
         discountAmount: this.form.discountAmount.trim() || '0',
         notes: this.form.notes.trim(),
         items,
@@ -137,7 +137,7 @@ export class QuotesPage implements OnInit {
     } else {
       const request: CreateQuoteRequest = {
         customerId: this.form.customerId,
-        expirationDate: this.form.expirationDate,
+        ...(this.form.expirationDate ? { expirationDate: this.form.expirationDate } : {}),
         discountAmount: this.form.discountAmount.trim() || '0',
         ...(this.form.notes.trim() ? { notes: this.form.notes.trim() } : {}),
         items,
@@ -223,7 +223,7 @@ export class QuotesPage implements OnInit {
   protected lineTotal(line: QuoteFormLine): number { return Number(this.productFor(line.productId)?.salePrice ?? 0) * Number(line.quantity || 0); }
   protected previewSubtotal(): number { return this.form.items.reduce((sum, line) => sum + this.lineTotal(line), 0); }
   protected previewTotal(): number { return Math.max(0, this.previewSubtotal() - Number(this.form.discountAmount || 0)); }
-  protected formatMoney(value: string | number): string { return money(value); }
+  protected formatMoney(value: string | number, currency = 'PEN'): string { return money(value, currency); }
   protected formatDate(value: string): string { return shortDate(value); }
   protected range(): string { return pageRange(this.result()); }
   protected methodLabel(method: PaymentMethod): string { return PAYMENT_METHOD_LABELS[method]; }
@@ -259,13 +259,11 @@ export class QuotesPage implements OnInit {
 }
 
 function emptyQuoteForm(key = 1): QuoteForm {
-  const expiration = new Date(); expiration.setDate(expiration.getDate() + 15);
-  return { customerId: '', expirationDate: expiration.toISOString().slice(0, 10), discountAmount: '0', notes: '', items: [{ key, productId: '', quantity: '1' }] };
+  return { customerId: '', expirationDate: '', discountAmount: '0', notes: '', items: [{ key, productId: '', quantity: '1' }] };
 }
 
 function validateQuoteForm(form: QuoteForm): string | null {
   if (!form.customerId) return 'Selecciona un cliente.';
-  if (!form.expirationDate) return 'Selecciona la fecha de vigencia.';
   if (!validAmount(form.discountAmount || '0', true)) return 'El descuento debe ser un monto válido con máximo 2 decimales.';
   if (!form.items.length || form.items.some(item => !item.productId)) return 'Selecciona un producto o servicio en cada línea.';
   if (form.items.some(item => !validQuantity(item.quantity))) return 'Cada cantidad debe ser mayor que cero y tener máximo 3 decimales.';

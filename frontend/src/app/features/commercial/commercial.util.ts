@@ -26,13 +26,14 @@ export function requestErrorMessage(error: unknown): string {
     : 'No se pudo completar la operación. Inténtalo nuevamente.';
 }
 
-export function money(value: string | number | null | undefined): string {
+export function money(value: string | number | null | undefined, currency = 'PEN'): string {
   const amount = Number(value ?? 0);
-  return new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: 'PEN',
-    minimumFractionDigits: 2,
-  }).format(Number.isFinite(amount) ? amount : 0);
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  try {
+    return new Intl.NumberFormat('es-PE', { style: 'currency', currency, minimumFractionDigits: 2 }).format(safeAmount);
+  } catch {
+    return `${currency} ${safeAmount.toFixed(2)}`;
+  }
 }
 
 export function shortDate(value: string): string {
