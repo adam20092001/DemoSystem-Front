@@ -16,6 +16,19 @@ export interface CompanySettings {
   updatedAt: string;
 }
 
+export type PosCompanySettings = Pick<
+  CompanySettings,
+  | 'businessName'
+  | 'tradeName'
+  | 'taxId'
+  | 'address'
+  | 'currencyCode'
+  | 'currencySymbol'
+  | 'taxEnabled'
+  | 'taxRate'
+  | 'maxDiscountPercent'
+>;
+
 export type UpdateCompanySettings = Omit<CompanySettings, 'id' | 'createdAt' | 'updatedAt'>;
 export type DocumentType = 'QUOTE' | 'SALE';
 

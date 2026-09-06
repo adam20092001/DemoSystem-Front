@@ -34,9 +34,7 @@ import { ApiRequestError } from '../../core/errors/api-request.error';
 
       <section class="access">
         <form (submit)="onSubmit($event, usernameInput.value, passwordInput.value)">
-          <p class="eyebrow">Acceso interno</p>
           <h2>Ingresa a tu cuenta</h2>
-          <p class="sub">Usa tus credenciales corporativas para continuar.</p>
 
           @if (error()) {
             <p class="error-banner" role="alert">{{ error() }}</p>
@@ -59,8 +57,6 @@ import { ApiRequestError } from '../../core/errors/api-request.error';
               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             }
           </button>
-
-          <p class="hint">Usa tus credenciales personales y no las compartas con otras personas.</p>
         </form>
       </section>
     </main>

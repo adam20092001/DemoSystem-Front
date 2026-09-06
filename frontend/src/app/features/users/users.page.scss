@@ -2,14 +2,13 @@
 
 .page-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 }
 
-.page-header h1 { margin-top: 6px; font-size: 26px; }
-.page-header p:last-child { margin: 7px 0 0; color: var(--muted); font-size: 13.5px; }
+.page-header h1 { font-size: 25px; }
 
 .notice {
   display: flex;
@@ -43,7 +42,7 @@
 
 .table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
 table { width: 100%; min-width: 920px; border-collapse: collapse; }
-th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
 th {
   background: var(--surface-2);
   color: var(--muted);

@@ -1,24 +1,7 @@
 import { ApiRequestError } from '../../core/errors/api-request.error';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
 import { PaymentMethod } from './commercial.model';
-
-export const PAYMENT_METHODS: PaymentMethod[] = [
-  'CASH',
-  'BANK_TRANSFER',
-  'BANK_DEPOSIT',
-  'CARD',
-  'DIGITAL_WALLET',
-  'OTHER',
-];
-
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  CASH: 'Efectivo',
-  BANK_TRANSFER: 'Transferencia bancaria',
-  BANK_DEPOSIT: 'Depósito bancario',
-  CARD: 'Tarjeta',
-  DIGITAL_WALLET: 'Billetera digital',
-  OTHER: 'Otro',
-};
+import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
 
 export function requestErrorMessage(error: unknown): string {
   return error instanceof ApiRequestError
@@ -54,8 +37,8 @@ export function pageRange(result: PaginatedResponse<unknown> | null): string {
   return `${from}–${to} de ${result.total}`;
 }
 
-export function requiresPaymentReference(method: PaymentMethod): boolean {
-  return ['BANK_TRANSFER', 'BANK_DEPOSIT', 'CARD'].includes(method);
+export function requiresPaymentReference(methods: readonly PaymentMethodDefinition[], code: PaymentMethod): boolean {
+  return methods.find(method => method.code === code)?.requiresReference ?? false;
 }
 
 export function validAmount(value: string, allowZero = false): boolean {

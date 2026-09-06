@@ -6,6 +6,11 @@ import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavigationItem, UserRole } from '../../core/models/navigation.model';
 
+interface NavigationSection {
+  label: string;
+  items: NavigationItem[];
+}
+
 /** Iconos de trazo (24px, stroke 1.8) — un solo estilo para toda la navegación. */
 const ICONS: Record<string, string> = {
   grid: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM13 13h7v7h-7zM4 13h7v7H4z"/>',
@@ -16,6 +21,8 @@ const ICONS: Record<string, string> = {
   file: '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
   receipt: '<path d="M5 3h14v18l-2.3-1.5L14 21l-2-1.4L10 21l-2.7-1.5L5 21z"/><path d="M9 8h6M9 12h6"/>',
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h12v4M3 7v10a2 2 0 0 0 2 2h14V9H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14" r="1.2"/>',
+  cash: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h.01M17 15h.01"/><circle cx="12" cy="12" r="3"/>',
+  card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/>',
   book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22z"/>',
   chart: '<path d="M4 20V4M4 20h16M8 20v-6M12 20v-9M16 20v-4"/>',
   invoice: '<path d="M6 3h12v18l-2-1.4L14 21l-2-1.4L10 21l-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
@@ -54,6 +61,7 @@ export class AppShellComponent {
     { label: 'Cotizaciones', route: '/quotes', icon: 'file', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Ventas', route: '/sales', icon: 'receipt', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Pagos', route: '/payments', icon: 'wallet', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
+    { label: 'Caja', route: '/cash-sessions', icon: 'cash', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Contabilidad', route: '/accounting', icon: 'book', roles: ['ADMIN', 'MANAGEMENT'] },
     { label: 'Reportes', route: '/reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'SELLER'] },
     { label: 'Comprobantes', route: '/electronic-documents', icon: 'invoice', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
@@ -61,7 +69,24 @@ export class AppShellComponent {
     { label: 'Configuración', route: '/settings', icon: 'settings', roles: ['ADMIN', 'MANAGEMENT'] },
   ];
 
-  protected readonly visibleNav = computed(() => this.nav.filter(item => item.roles.includes(this.auth.role())));
+  private readonly navSections: NavigationSection[] = [
+    { label: 'Operación', items: this.nav.filter(item => ['/dashboard', '/pos', '/quotes', '/sales'].includes(item.route)) },
+    { label: 'Catálogo', items: this.nav.filter(item => ['/products', '/inventory', '/customers'].includes(item.route)) },
+    { label: 'Finanzas', items: this.nav.filter(item => ['/payments', '/cash-sessions', '/accounting', '/reports', '/electronic-documents'].includes(item.route)) },
+    { label: 'Administración', items: this.nav.filter(item => ['/users', '/settings'].includes(item.route)) },
+  ];
+
+  protected readonly visibleNavSections = computed(() =>
+    this.navSections
+      .map(section => ({ ...section, items: section.items.filter(item => item.roles.includes(this.auth.role())) }))
+      .filter(section => section.items.length > 0),
+  );
+
+  protected readonly todayLabel = new Intl.DateTimeFormat('es-PE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date());
 
   protected readonly initials = computed(() =>
     this.auth.userName().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),

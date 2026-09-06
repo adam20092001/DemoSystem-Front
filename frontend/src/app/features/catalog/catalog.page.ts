@@ -4,6 +4,7 @@ import { Observable, finalize, forkJoin, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApiRequestError } from '../../core/errors/api-request.error';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
+import { money as formatCurrency } from '../commercial/commercial.util';
 import {
   CatalogStatus,
   Category,
@@ -636,7 +637,7 @@ export class CatalogPage implements OnInit {
   }
 
   protected money(value: string): string {
-    return Number(value).toFixed(2);
+    return formatCurrency(value);
   }
 
   protected fileSize(bytes: number): string {

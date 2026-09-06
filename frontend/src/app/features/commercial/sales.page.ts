@@ -3,6 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
+import { CashSessionsService } from '../cash-sessions/cash-sessions.service';
+import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
+import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import {
   PaymentMethod,
   SaleDeliveryStatus,
@@ -15,8 +18,6 @@ import { CommercialService } from './commercial.service';
 import { ElectronicDocument, FiscalDocumentType, FiscalSeries } from '../electronic-documents/electronic-document.model';
 import { ElectronicDocumentsService } from '../electronic-documents/electronic-documents.service';
 import {
-  PAYMENT_METHOD_LABELS,
-  PAYMENT_METHODS,
   dateTime,
   money,
   pageRange,
@@ -38,6 +39,8 @@ export class SalesPage implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly commercial = inject(CommercialService);
   protected readonly electronicDocuments = inject(ElectronicDocumentsService);
+  protected readonly cashSessions = inject(CashSessionsService);
+  private readonly paymentMethodsService = inject(PaymentMethodsService);
   protected readonly canWrite = computed(() => ['ADMIN', 'SELLER'].includes(this.auth.role()));
   protected readonly isAdmin = computed(() => this.auth.role() === 'ADMIN');
   protected readonly result = signal<PaginatedResponse<SaleListItem> | null>(null);
@@ -55,7 +58,7 @@ export class SalesPage implements OnInit {
   protected readonly statuses: SaleStatus[] = ['ACTIVE', 'CANCELLED'];
   protected readonly paymentStatuses: SalePaymentStatus[] = ['UNPAID', 'PARTIALLY_PAID', 'PAID'];
   protected readonly deliveryStatuses: SaleDeliveryStatus[] = ['NOT_APPLICABLE', 'PENDING', 'DELIVERED', 'OBSERVED'];
-  protected readonly paymentMethods = PAYMENT_METHODS;
+  protected readonly paymentMethods = signal<PaymentMethodDefinition[]>([]);
   protected readonly pageSizes = [10, 20, 50];
 
   protected search = '';
@@ -72,7 +75,11 @@ export class SalesPage implements OnInit {
   protected fiscalDocumentType: FiscalDocumentType = 'FACTURA';
   protected selectedFiscalSeries = '';
 
-  ngOnInit(): void { this.loadSales(); }
+  ngOnInit(): void {
+    this.loadPaymentMethods();
+    if (this.canWrite()) this.cashSessions.refreshCurrent().pipe(take(1)).subscribe({ error: () => undefined });
+    this.loadSales();
+  }
 
   protected applyFilters(event: Event): void { event.preventDefault(); this.loadSales(1); }
   protected clearFilters(): void { this.search = ''; this.status = ''; this.paymentStatus = ''; this.deliveryStatus = ''; this.confirmedFrom = ''; this.confirmedTo = ''; this.loadSales(1); }
@@ -118,8 +125,12 @@ export class SalesPage implements OnInit {
   }
 
   protected openPayment(sale: SaleListItem | SaleDetail): void {
+    if (!this.cashSessions.hasOpenSession()) {
+      this.error.set('Abre tu caja antes de registrar un cobro.');
+      return;
+    }
     this.paymentSale.set(sale);
-    this.paymentMethod = 'CASH';
+    this.paymentMethod = this.paymentMethods().find(method => method.code === 'CASH')?.code ?? this.paymentMethods()[0]?.code ?? '';
     this.paymentAmount = sale.balanceDue;
     this.paymentReference = '';
     this.error.set(null);
@@ -129,9 +140,11 @@ export class SalesPage implements OnInit {
     event.preventDefault();
     const sale = this.paymentSale();
     if (!sale) return;
+    if (!this.cashSessions.hasOpenSession()) { this.error.set('Abre tu caja antes de registrar un cobro.'); return; }
+    if (!this.paymentMethod) { this.error.set('Selecciona un método de pago disponible.'); return; }
     if (!validAmount(this.paymentAmount)) { this.error.set('El pago debe ser mayor que cero y tener máximo 2 decimales.'); return; }
     if (Number(this.paymentAmount) > Number(sale.balanceDue)) { this.error.set('El pago no puede superar el saldo pendiente.'); return; }
-    if (requiresPaymentReference(this.paymentMethod) && !this.paymentReference.trim()) { this.error.set('Ingresa la referencia del pago.'); return; }
+    if (requiresPaymentReference(this.paymentMethods(), this.paymentMethod) && !this.paymentReference.trim()) { this.error.set('Ingresa la referencia del pago.'); return; }
     this.actionLoading.set(true);
     this.commercial.registerPayment(sale.id, {
       method: this.paymentMethod,
@@ -179,7 +192,7 @@ export class SalesPage implements OnInit {
   protected formatMoney(value: string | number, currency = 'PEN'): string { return money(value, currency); }
   protected formatDate(value: string): string { return dateTime(value); }
   protected range(): string { return pageRange(this.result()); }
-  protected methodLabel(value: PaymentMethod): string { return PAYMENT_METHOD_LABELS[value]; }
+  protected selectedMethodRequiresReference(): boolean { return requiresPaymentReference(this.paymentMethods(), this.paymentMethod); }
   protected saleStatusLabel(value: SaleStatus): string { return value === 'ACTIVE' ? 'Activa' : 'Anulada'; }
   protected paymentStatusLabel(value: SalePaymentStatus): string { return { UNPAID: 'Pendiente', PARTIALLY_PAID: 'Pago parcial', PAID: 'Pagada' }[value]; }
   protected deliveryStatusLabel(value: SaleDeliveryStatus): string { return { NOT_APPLICABLE: 'No aplica', PENDING: 'Pendiente', DELIVERED: 'Entregada', OBSERVED: 'Observada' }[value]; }
@@ -212,6 +225,18 @@ export class SalesPage implements OnInit {
       ...(this.confirmedTo ? { confirmedTo: this.confirmedTo } : {}),
     }).pipe(take(1), finalize(() => this.loading.set(false))).subscribe({
       next: result => this.result.set(result),
+      error: error => this.error.set(requestErrorMessage(error)),
+    });
+  }
+
+  private loadPaymentMethods(): void {
+    this.paymentMethodsService.listActive().pipe(take(1)).subscribe({
+      next: methods => {
+        this.paymentMethods.set(methods);
+        if (!methods.some(method => method.code === this.paymentMethod)) {
+          this.paymentMethod = methods.find(method => method.code === 'CASH')?.code ?? methods[0]?.code ?? '';
+        }
+      },
       error: error => this.error.set(requestErrorMessage(error)),
     });
   }

@@ -4,14 +4,14 @@
 
 /* --- Sidebar: panel de control en acero ----------------------------------- */
 .sidebar {
-  position: fixed; inset: 0 auto 0 0; width: 256px; z-index: var(--z-sticky);
-  padding: 22px 16px 16px;
+  position: fixed; inset: 0 auto 0 0; width: 224px; z-index: var(--z-sticky);
+  padding: 16px 12px 12px;
   display: flex; flex-direction: column;
   background: var(--shell); color: var(--shell-ink);
   border-right: 1px solid var(--shell-line);
 }
 
-.brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 24px; text-decoration: none; color: #fff; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; text-decoration: none; color: #fff; }
 .brand-mark {
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--r-md);
   background: var(--brand); color: var(--brand-on);
@@ -20,30 +20,29 @@
 .brand-text small { display: block; font-size: 11px; color: var(--shell-muted); margin-top: 1px; }
 
 nav {
-  display: grid;
-  align-content: start;
-  gap: 3px;
+  display: grid; align-content: start; gap: 13px;
   min-height: 0;
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-color: var(--shell-line) transparent;
 }
+.nav-section { display: grid; gap: 2px; }
 .nav-caption {
-  padding: 0 10px 10px; font-size: 10.5px; font-weight: 700;
+  padding: 0 10px 5px; font-size: 9.5px; font-weight: 750;
   letter-spacing: 0.13em; text-transform: uppercase; color: var(--shell-faint);
 }
 nav a {
-  display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 11px;
+  display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 10px;
   border-radius: var(--r-md); color: var(--shell-muted); text-decoration: none;
-  font-size: 13.5px; font-weight: 500;
+  font-size: 12.5px; font-weight: 520;
   transition: background var(--t) var(--ease), color var(--t) var(--ease);
 }
 nav a:hover { background: var(--shell-2); color: var(--shell-ink); }
 nav a.active { background: var(--shell-2); color: var(--brand); font-weight: 600; }
 nav a.active .nav-icon { opacity: 1; }
-.nav-icon { display: grid; place-items: center; width: 20px; height: 20px; opacity: 0.85; }
-.nav-icon svg { width: 20px; height: 20px; }
+.nav-icon { display: grid; place-items: center; width: 18px; height: 18px; opacity: 0.82; }
+.nav-icon svg { width: 18px; height: 18px; }
 .nav-label { line-height: 1; }
 
 /* --- Perfil --------------------------------------------------------------- */
@@ -68,11 +67,11 @@ nav a.active .nav-icon { opacity: 1; }
 .logout:hover { background: var(--shell-2); color: var(--shell-ink); }
 
 /* --- Zona principal ------------------------------------------------------- */
-main { margin-left: 256px; min-height: 100vh; display: flex; flex-direction: column; }
+main { margin-left: 224px; min-height: 100vh; display: flex; flex-direction: column; }
 
 .topbar {
   position: sticky; top: 0; z-index: var(--z-dropdown);
-  height: 68px; padding: 0 32px; display: flex; align-items: center; gap: 20px;
+  height: 54px; padding: 0 24px; display: flex; align-items: center; gap: 18px;
   background: oklch(1 0 0 / 0.85); backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
@@ -85,7 +84,7 @@ main { margin-left: 256px; min-height: 100vh; display: flex; flex-direction: col
 .role-error { display: flex; justify-content: space-between; gap: 12px; padding: 9px 32px; background: var(--danger-tint); color: var(--danger-ink); font-size: 12px; font-weight: 600; }
 .role-error button { border: 0; background: transparent; color: inherit; font-size: 18px; }
 
-.page { flex: 1; padding: 30px 32px 48px; }
+.page { flex: 1; padding: 22px 24px 36px; }
 
 .menu-button { display: none; height: 40px; width: 40px; padding: 0; font-size: 18px; }
 .scrim { display: none; }
@@ -110,5 +109,5 @@ main { margin-left: 256px; min-height: 100vh; display: flex; flex-direction: col
   .role-switcher span { display: none; }
   .role-switcher select { width: 132px; }
   .page { padding: 20px 14px 34px; }
-  .sidebar { width: min(276px, calc(100vw - 42px)); padding: 18px 14px 14px; }
+  .sidebar { width: min(276px, calc(100vw - 42px)); padding: 16px 12px 12px; }
 }

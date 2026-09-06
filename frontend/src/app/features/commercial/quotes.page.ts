@@ -5,6 +5,9 @@ import { AuthService } from '../../core/auth/auth.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
 import { ProductListItem } from '../catalog/catalog.model';
 import { CatalogService } from '../catalog/catalog.service';
+import { CashSessionsService } from '../cash-sessions/cash-sessions.service';
+import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
+import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import {
   CreateQuoteRequest,
   Customer,
@@ -18,8 +21,6 @@ import {
 } from './commercial.model';
 import { CommercialService } from './commercial.service';
 import {
-  PAYMENT_METHOD_LABELS,
-  PAYMENT_METHODS,
   money,
   pageRange,
   requestErrorMessage,
@@ -44,6 +45,8 @@ export class QuotesPage implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly commercial = inject(CommercialService);
   private readonly catalog = inject(CatalogService);
+  protected readonly cashSessions = inject(CashSessionsService);
+  private readonly paymentMethodsService = inject(PaymentMethodsService);
 
   protected readonly canWrite = computed(() => ['ADMIN', 'SELLER'].includes(this.auth.role()));
   protected readonly result = signal<PaginatedResponse<QuoteListItem> | null>(null);
@@ -63,7 +66,7 @@ export class QuotesPage implements OnInit {
 
   protected readonly statuses: QuoteStatus[] = ['PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CONVERTED'];
   protected readonly pageSizes = [10, 20, 50];
-  protected readonly paymentMethods = PAYMENT_METHODS;
+  protected readonly paymentMethods = signal<PaymentMethodDefinition[]>([]);
 
   protected search = '';
   protected status = '';
@@ -79,6 +82,8 @@ export class QuotesPage implements OnInit {
 
   ngOnInit(): void {
     this.loadLookups();
+    this.loadPaymentMethods();
+    if (this.canWrite()) this.cashSessions.refreshCurrent().pipe(take(1)).subscribe({ error: () => undefined });
     this.loadQuotes();
   }
 
@@ -186,7 +191,7 @@ export class QuotesPage implements OnInit {
   protected openConversion(quote: QuoteListItem | QuoteDetail): void {
     this.convertQuote.set(quote);
     this.conversionPaymentEnabled = false;
-    this.conversionPaymentMethod = 'CASH';
+    this.conversionPaymentMethod = this.defaultPaymentMethod();
     this.conversionPaymentAmount = '';
     this.conversionPaymentReference = '';
     this.error.set(null);
@@ -198,7 +203,8 @@ export class QuotesPage implements OnInit {
     if (!quote) return;
     let payment: PaymentRequest | undefined;
     if (this.conversionPaymentEnabled) {
-      const error = validatePayment(this.conversionPaymentMethod, this.conversionPaymentAmount, this.conversionPaymentReference);
+      if (!this.cashSessions.hasOpenSession()) { this.error.set('Abre tu caja antes de registrar un cobro.'); return; }
+      const error = validatePayment(this.paymentMethods(), this.conversionPaymentMethod, this.conversionPaymentAmount, this.conversionPaymentReference);
       if (error) { this.error.set(error); return; }
       payment = {
         method: this.conversionPaymentMethod,
@@ -226,7 +232,7 @@ export class QuotesPage implements OnInit {
   protected formatMoney(value: string | number, currency = 'PEN'): string { return money(value, currency); }
   protected formatDate(value: string): string { return shortDate(value); }
   protected range(): string { return pageRange(this.result()); }
-  protected methodLabel(method: PaymentMethod): string { return PAYMENT_METHOD_LABELS[method]; }
+  protected selectedMethodRequiresReference(): boolean { return requiresPaymentReference(this.paymentMethods(), this.conversionPaymentMethod); }
   protected statusLabel(status: QuoteStatus): string { return { PENDING: 'Pendiente', ACCEPTED: 'Aceptada', REJECTED: 'Rechazada', EXPIRED: 'Vencida', CONVERTED: 'Convertida' }[status]; }
   protected statusClass(status: QuoteStatus): string { return status === 'ACCEPTED' ? 'badge--ok' : status === 'PENDING' ? 'badge--warn' : status === 'CONVERTED' ? 'badge--info' : status === 'REJECTED' ? 'badge--danger' : 'badge--neutral'; }
   protected canConvert(status: QuoteStatus): boolean { return this.canWrite() && ['PENDING', 'ACCEPTED'].includes(status); }
@@ -255,6 +261,20 @@ export class QuotesPage implements OnInit {
     });
   }
 
+  private loadPaymentMethods(): void {
+    this.paymentMethodsService.listActive().pipe(take(1)).subscribe({
+      next: methods => {
+        this.paymentMethods.set(methods);
+        if (!methods.some(method => method.code === this.conversionPaymentMethod)) this.conversionPaymentMethod = this.defaultPaymentMethod();
+      },
+      error: error => this.error.set(requestErrorMessage(error)),
+    });
+  }
+
+  private defaultPaymentMethod(): string {
+    return this.paymentMethods().find(method => method.code === 'CASH')?.code ?? this.paymentMethods()[0]?.code ?? '';
+  }
+
   private nextLineKey(): number { return this.lineKey++; }
 }
 
@@ -271,8 +291,9 @@ function validateQuoteForm(form: QuoteForm): string | null {
   return null;
 }
 
-function validatePayment(method: PaymentMethod, amount: string, reference: string): string | null {
+function validatePayment(methods: readonly PaymentMethodDefinition[], method: PaymentMethod, amount: string, reference: string): string | null {
+  if (!method || !methods.some(item => item.code === method)) return 'Selecciona un método de pago disponible.';
   if (!validAmount(amount)) return 'El pago debe ser mayor que cero y tener máximo 2 decimales.';
-  if (requiresPaymentReference(method) && !reference.trim()) return 'Ingresa la referencia del pago.';
+  if (requiresPaymentReference(methods, method) && !reference.trim()) return 'Ingresa la referencia del pago.';
   return null;
 }

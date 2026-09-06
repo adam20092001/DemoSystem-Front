@@ -36,6 +36,10 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "allowedHosts": [".trycloudflare.com"],
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": { "buildTarget": "demo-pos:build:production" },
             "development": { "buildTarget": "demo-pos:build:development" }

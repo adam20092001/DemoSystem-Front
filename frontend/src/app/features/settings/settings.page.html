@@ -1,4 +1,4 @@
-<header class="page-header"><div><p class="eyebrow">Administración</p><h1>Configuración</h1><p>Datos de la empresa, moneda, impuestos y numeración de documentos.</p></div></header>
+<header class="page-header"><h1>Configuración</h1></header>
 
 @if (notice()) { <div class="notice notice--ok"><span>{{ notice() }}</span><button type="button" (click)="notice.set(null)">×</button></div> }
 @if (error()) { <div class="notice notice--error"><span>{{ error() }}</span><button type="button" (click)="error.set(null)">×</button></div> }
@@ -31,6 +31,16 @@
     @if (canEdit()) { <footer><button class="btn btn--primary" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar configuración' }}</button></footer> }
   </section>
 </form>
+
+@if (auth.role() === 'ADMIN') {
+  <section class="surface settings-tools">
+    <div>
+      <p class="eyebrow">Administración</p>
+      <h2>Métodos de pago</h2>
+    </div>
+    <a class="btn btn--ghost" routerLink="/payment-methods">Administrar</a>
+  </section>
+}
 
 <section class="surface sequences">
   <header><div><p class="eyebrow">Numeración</p><h2>Correlativos</h2><p>El número actual es el último documento emitido y nunca puede disminuir.</p></div></header>

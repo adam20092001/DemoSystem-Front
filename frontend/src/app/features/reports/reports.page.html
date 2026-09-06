@@ -1,9 +1,5 @@
 <header class="page-header">
-  <div>
-    <p class="eyebrow">Análisis operativo</p>
-    <h1>Reportes</h1>
-    <p>Consulta información comercial consolidada directamente desde las operaciones registradas.</p>
-  </div>
+  <h1>Reportes</h1>
 </header>
 
 @if (error()) {
@@ -20,7 +16,7 @@
 </nav>
 
 <section class="report-heading">
-  <div><p class="eyebrow">Reporte actual</p><h2>{{ title() }}</h2><p>{{ description() }}</p></div>
+  <div><h2>{{ title() }}</h2></div>
   <div class="report-summary"><span>Registros encontrados</span><strong>{{ loading() ? '—' : (result()?.total ?? 0) }}</strong></div>
   <div class="report-summary"><span>Monto visible</span><strong>{{ loading() ? '—' : formatMoney(visibleAmount()) }}</strong></div>
 </section>
@@ -46,7 +42,7 @@
       <label class="field filter--wide"><span>Cliente</span><select class="input" name="reportQuoteCustomer" [(ngModel)]="customerId"><option value="">Todos</option>@for (customer of customers(); track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
     }
     @if (activeReport() === 'payments-by-method') {
-      <label class="field"><span>Método</span><select class="input" name="reportPaymentMethod" [(ngModel)]="paymentMethod"><option value="">Todos</option>@for (method of paymentMethods; track method) { <option [value]="method">{{ paymentMethodLabel(method) }}</option> }</select></label>
+      <label class="field"><span>Método</span><select class="input" name="reportPaymentMethod" [(ngModel)]="paymentMethod"><option value="">Todos</option>@for (method of paymentMethods(); track method.id) { <option [value]="method.code">{{ method.name }}</option> }</select></label>
       <label class="field"><span>Estado</span><select class="input" name="reportPaymentStatus" [(ngModel)]="paymentStatus"><option value="">Todos</option>@for (status of paymentStatuses; track status) { <option [value]="status">{{ paymentStatusLabel(status) }}</option> }</select></label>
       <label class="field"><span>Registrado por</span><select class="input" name="reportPaymentCreator" [(ngModel)]="paymentCreatorId"><option value="">Todos</option>@for (user of paymentCreators(); track user.id) { <option [value]="user.id">{{ user.firstName }} {{ user.lastName }}</option> }</select></label>
     }
@@ -87,7 +83,7 @@
       <table class="data-table payments-table"><thead><tr><th>Fecha</th><th>Venta</th><th>Cliente</th><th>Método</th><th>Referencia</th><th>Registrado por</th><th>Estado</th><th class="number">Monto</th></tr></thead><tbody>
         @if (loading()) { <tr><td colspan="8" class="empty">Actualizando reporte…</td></tr> }
         @else if (!paymentRows().length) { <tr><td colspan="8" class="empty">No hay pagos para los filtros seleccionados.</td></tr> }
-        @else { @for (row of paymentRows(); track row.paymentId) { <tr><td>{{ formatDate(row.paidAt) }}</td><td><strong class="mono">{{ row.saleNumber }}</strong></td><td>{{ row.customerName }}</td><td>{{ paymentMethodLabel(row.method) }}</td><td>{{ row.reference || '—' }}</td><td>{{ row.createdBy.firstName }} {{ row.createdBy.lastName }}</td><td><span class="badge" [class.badge--ok]="row.status === 'ACTIVE'" [class.badge--danger]="row.status === 'CANCELLED'">{{ paymentStatusLabel(row.status) }}</span></td><td class="number"><strong>{{ formatMoney(row.amount) }}</strong></td></tr> } }
+        @else { @for (row of paymentRows(); track row.paymentId) { <tr><td>{{ formatDate(row.paidAt) }}</td><td><strong class="mono">{{ row.saleNumber }}</strong></td><td>{{ row.customerName }}</td><td>{{ row.methodName }}</td><td>{{ row.reference || '—' }}</td><td>{{ row.createdBy.firstName }} {{ row.createdBy.lastName }}</td><td><span class="badge" [class.badge--ok]="row.status === 'ACTIVE'" [class.badge--danger]="row.status === 'CANCELLED'">{{ paymentStatusLabel(row.status) }}</span></td><td class="number"><strong>{{ formatMoney(row.amount) }}</strong></td></tr> } }
       </tbody></table>
     }
   </div>

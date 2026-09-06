@@ -1,12 +1,5 @@
 <header class="page-header">
-  <div>
-    <p class="eyebrow">Administración financiera</p>
-    <h1>Contabilidad</h1>
-    <p>
-      Consulta el plan de cuentas y los movimientos generados por ventas y
-      pagos.
-    </p>
-  </div>
+  <h1>Contabilidad</h1>
 </header>
 
 @if (error()) {
@@ -22,26 +15,22 @@
   <article class="metric">
     <p>Cuentas disponibles</p>
     <strong>{{ loadingAccounts() ? '—' : accounts().length }}</strong>
-    <small>Plan de cuentas interno</small>
   </article>
   <article class="metric">
     <p>Movimientos encontrados</p>
     <strong>{{ loadingEntries() ? '—' : (entries()?.total ?? 0) }}</strong>
-    <small>Según los filtros actuales</small>
   </article>
   <article class="metric">
     <p>Registros visibles</p>
     <strong
       >{{ loadingEntries() ? '—' : visibleEventCount('ORIGINAL') }}</strong
     >
-    <small>Operaciones registradas</small>
   </article>
   <article class="metric">
     <p>Reversiones visibles</p>
     <strong
       >{{ loadingEntries() ? '—' : visibleEventCount('REVERSAL') }}</strong
     >
-    <small>Operaciones anuladas</small>
   </article>
 </section>
 

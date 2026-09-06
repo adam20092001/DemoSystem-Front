@@ -1,9 +1,5 @@
 <header class="page-header">
-  <div>
-    <p class="eyebrow">Catálogo</p>
-    <h1>Productos y servicios</h1>
-    <p>Administra el catálogo comercial, sus categorías, unidades, especificaciones e imágenes.</p>
-  </div>
+  <h1>Productos y servicios</h1>
   @if (canManage()) {
     <button class="btn btn--primary" type="button" (click)="activeTab() === 'products' ? openCreateProduct() : activeTab() === 'categories' ? openCreateCategory() : openCreateUnit()">
       <span aria-hidden="true">＋</span>
@@ -130,7 +126,7 @@
                       @if (product.primaryImage) {
                         <img [src]="catalog.imageUrl(product.primaryImage.fileUrl)" [alt]="product.name">
                       } @else {
-                        <span aria-hidden="true">◇</span>
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>
                       }
                     </button>
                     <span>
@@ -154,20 +150,22 @@
                 </td>
                 <td><span class="badge" [class]="statusClass(product.status)">{{ statusLabel(product.status) }}</span></td>
                 <td>
-                  <div class="row-actions">
-                    <button class="action-button" type="button" (click)="openProductDetail(product)">Ver</button>
-                    @if (canManage()) {
-                      <button class="action-button" type="button" (click)="openEditProduct(product)" [disabled]="loadingDetail()">Editar</button>
-                      <button
-                        class="action-button"
-                        [class.action-button--danger]="product.status === 'ACTIVE'"
-                        [class.action-button--ok]="product.status === 'INACTIVE'"
-                        type="button"
-                        (click)="toggleProductStatus(product)"
-                        [disabled]="actionLoading()"
-                      >{{ product.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}</button>
-                    }
-                  </div>
+                  <details class="action-menu">
+                    <summary aria-label="Abrir acciones">•••</summary>
+                    <div>
+                      <button type="button" (click)="openProductDetail(product)">Ver detalle</button>
+                      @if (canManage()) {
+                        <button type="button" (click)="openEditProduct(product)" [disabled]="loadingDetail()">Editar</button>
+                        <button
+                          [class.danger-link]="product.status === 'ACTIVE'"
+                          [class.ok-link]="product.status === 'INACTIVE'"
+                          type="button"
+                          (click)="toggleProductStatus(product)"
+                          [disabled]="actionLoading()"
+                        >{{ product.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}</button>
+                      }
+                    </div>
+                  </details>
                 </td>
               </tr>
             } @empty {

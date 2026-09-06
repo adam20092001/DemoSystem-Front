@@ -1,0 +1,57 @@
+<header class="page-header"><h1>Caja</h1><div class="header-actions">
+  @if (service.current()?.status === 'OPEN') { <button class="btn btn--primary" type="button" (click)="openClosingForm()">Cerrar caja</button> }
+</div></header>
+@if (notice()) { <div class="notice notice--ok"><span>{{ notice() }}</span><button type="button" (click)="notice.set(null)">×</button></div> }
+@if (error() && !formOpen() && !reviewAction()) { <div class="notice notice--error"><span>{{ error() }}</span><button type="button" (click)="error.set(null)">×</button></div> }
+
+@if (canOperate()) {
+  @if (loadingCurrent()) { <section class="panel"><div class="panel__body empty">Actualizando caja…</div></section> }
+  @else if (service.current(); as current) {
+    <section class="cash-current panel">
+      <div class="panel__head"><div><h2>Caja actual</h2><span class="badge" [class]="statusClass(current.status)">{{ statusLabel(current.status) }}</span></div><strong>{{ formatDate(current.openedAt) }}</strong></div>
+      <div class="panel__body"><div class="metrics metrics--cash">
+        <article class="metric"><p>Monto inicial</p><strong>{{ formatMoney(current.openingAmount) }}</strong></article>
+        <article class="metric"><p>Cobros registrados</p><strong>{{ formatMoney(current.liveCollectionsTotal ?? 0) }}</strong></article>
+        <article class="metric"><p>Efectivo esperado</p><strong>{{ formatMoney(current.liveExpectedCashAmount ?? current.expectedCashAmount ?? 0) }}</strong></article>
+        <article class="metric"><p>Diferencia</p><strong [class.danger-text]="hasDifference(current)">{{ current.differenceAmount === null ? '—' : formatMoney(current.differenceAmount) }}</strong></article>
+      </div>
+      @if (currentBreakdown().length) { <div class="breakdown">@for (row of currentBreakdown(); track row.paymentMethodId) { <div><span>{{ row.paymentMethodName }}</span><strong>{{ formatMoney(row.totalAmount) }}</strong></div> }</div> }
+      @if (current.status === 'PENDING_APPROVAL') { <div class="notice notice--warn"><span>Este cierre está pendiente de revisión. No se pueden registrar cobros hasta que sea resuelto.</span></div> }
+      </div>
+    </section>
+  } @else { <section class="panel empty-state"><div><p class="eyebrow">Inicio de turno</p><strong>No tienes una caja abierta</strong></div><button class="btn btn--primary" type="button" (click)="openOpeningForm()">Abrir caja</button></section> }
+}
+
+<section class="panel">
+  <div class="panel__head"><h2>Historial</h2></div>
+  <form class="filters" (submit)="applyFilters($event)">
+    <label class="field"><span>Estado</span><select class="input" name="cashStatus" [(ngModel)]="statusFilter"><option value="">Todos</option>@for (status of statuses; track status) { <option [value]="status">{{ statusLabel(status) }}</option> }</select></label>
+    <label class="field"><span>Apertura desde</span><input class="input" type="date" name="cashOpenedFrom" [(ngModel)]="openedFrom"></label>
+    <label class="field"><span>Apertura hasta</span><input class="input" type="date" name="cashOpenedTo" [(ngModel)]="openedTo"></label>
+    <label class="field"><span>Resultado</span><select class="input" name="cashDifference" [(ngModel)]="differenceFilter"><option value="">Todos</option><option value="false">Sin diferencia</option><option value="true">Con diferencia</option></select></label>
+    <div class="filter-actions"><button class="btn btn--primary" type="submit">Aplicar</button><button class="btn btn--ghost" type="button" (click)="clearFilters()">Limpiar</button></div>
+  </form>
+  <div class="table-wrap"><table class="data-table"><thead><tr><th>Operador</th><th>Apertura</th><th>Cierre</th><th>Estado</th><th class="number">Inicial</th><th class="number">Esperado</th><th class="number">Diferencia</th><th></th></tr></thead><tbody>
+    @if (loading()) { <tr><td colspan="8" class="empty">Actualizando historial…</td></tr> }
+    @else if (!history()?.data?.length) { <tr><td colspan="8" class="empty">Aún no hay movimientos de caja.</td></tr> }
+    @else { @for (session of history()!.data; track session.id) { <tr>
+      <td>{{ ownerLabel(session) }}</td><td>{{ formatDate(session.openedAt) }}</td><td>{{ formatDate(session.closedAt) }}</td>
+      <td><span class="badge" [class]="statusClass(session.status)">{{ statusLabel(session.status) }}</span></td>
+      <td class="number">{{ formatMoney(session.openingAmount) }}</td><td class="number">{{ session.expectedCashAmount === null ? '—' : formatMoney(session.expectedCashAmount) }}</td>
+      <td class="number" [class.danger-text]="hasDifference(session)">{{ session.differenceAmount === null ? '—' : formatMoney(session.differenceAmount) }}</td>
+      <td><button class="row-action" type="button" (click)="openDetail(session.id)">Ver</button></td>
+    </tr> } }
+  </tbody></table></div>
+  <footer class="pagination"><span>{{ range() }}</span><div class="pagination__actions"><label>Filas <select class="input" name="cashPageSize" [(ngModel)]="pageSize" (ngModelChange)="loadHistory(1)">@for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }</select></label><button class="btn btn--ghost" type="button" [disabled]="(history()?.page ?? 1) <= 1" (click)="previousPage()">Anterior</button><button class="btn btn--ghost" type="button" [disabled]="(history()?.page ?? 1) >= (history()?.totalPages ?? 1)" (click)="nextPage()">Siguiente</button></div></footer>
+</section>
+
+@if (formOpen() === 'open') { <div class="backdrop"><form class="dialog dialog--small" (submit)="submitOpen($event)"><header class="dialog__head"><div><p class="eyebrow">Inicio de turno</p><h2>Abrir caja</h2></div><button class="dialog__close" type="button" (click)="formOpen.set(null)">×</button></header><div class="dialog__body"><label class="field"><span>Monto inicial *</span><input class="input" name="openingAmount" [(ngModel)]="openingAmount" inputmode="decimal"></label>@if (error()) { <p class="danger-text">{{ error() }}</p> }</div><footer class="dialog__foot"><button class="btn btn--ghost" type="button" (click)="formOpen.set(null)">Cancelar</button><button class="btn btn--primary" type="submit" [disabled]="saving()">{{ saving() ? 'Abriendo…' : 'Abrir caja' }}</button></footer></form></div> }
+
+@if (formOpen() === 'close') { <div class="backdrop"><form class="dialog dialog--small" (submit)="submitClose($event)"><header class="dialog__head"><div><p class="eyebrow">Fin de turno</p><h2>Cerrar caja</h2></div><button class="dialog__close" type="button" (click)="formOpen.set(null)">×</button></header><div class="dialog__body"><div class="close-summary"><span>Efectivo esperado</span><strong>{{ formatMoney(service.current()?.liveExpectedCashAmount ?? 0) }}</strong></div><label class="field"><span>Efectivo contado *</span><input class="input" name="countedCashAmount" [(ngModel)]="countedCashAmount" inputmode="decimal"></label><label class="field"><span>Observación</span><textarea class="input" name="closingObservation" [(ngModel)]="closingObservation" maxlength="500"></textarea></label>@if (error()) { <p class="danger-text">{{ error() }}</p> }</div><footer class="dialog__foot"><button class="btn btn--ghost" type="button" (click)="formOpen.set(null)">Cancelar</button><button class="btn btn--primary" type="submit" [disabled]="saving()">{{ saving() ? 'Cerrando…' : 'Cerrar caja' }}</button></footer></form></div> }
+
+@if (detail()) { <div class="backdrop"><section class="dialog dialog--wide"><header class="dialog__head"><div><p class="eyebrow">Detalle de caja</p><h2>{{ ownerLabel(detail()!) }}</h2></div><button class="dialog__close" type="button" (click)="detail.set(null); reviewAction.set(null)">×</button></header><div class="dialog__body">
+  <div class="detail-grid"><div class="detail-card"><span>Estado</span><strong>{{ statusLabel(detail()!.status) }}</strong></div><div class="detail-card"><span>Apertura</span><strong>{{ formatDate(detail()!.openedAt) }}</strong></div><div class="detail-card"><span>Monto inicial</span><strong>{{ formatMoney(detail()!.openingAmount) }}</strong></div><div class="detail-card"><span>Efectivo esperado</span><strong>{{ formatMoney(detail()!.liveExpectedCashAmount ?? detail()!.expectedCashAmount ?? 0) }}</strong></div><div class="detail-card"><span>Efectivo contado</span><strong>{{ detail()!.countedCashAmount === null ? '—' : formatMoney(detail()!.countedCashAmount) }}</strong></div><div class="detail-card"><span>Diferencia</span><strong [class.danger-text]="hasDifference(detail()!)">{{ detail()!.differenceAmount === null ? '—' : formatMoney(detail()!.differenceAmount) }}</strong></div></div>
+  @if (detailBreakdown().length) { <section class="detail-section"><h3>Cobros por método</h3><div class="breakdown">@for (row of detailBreakdown(); track row.paymentMethodId) { <div><span>{{ row.paymentMethodName }}</span><strong>{{ formatMoney(row.totalAmount) }}</strong></div> }</div></section> }
+  @if (detail()!.closingObservation) { <section class="detail-section"><h3>Observación del cierre</h3><p>{{ detail()!.closingObservation }}</p></section> }
+  @if (reviewAction()) { <form class="review-form" (submit)="submitReview($event)"><label class="field"><span>{{ reviewAction() === 'approve' ? 'Comentario' : 'Motivo del rechazo *' }}</span><textarea class="input" name="reviewText" [(ngModel)]="reviewText" maxlength="500"></textarea></label>@if (error()) { <p class="danger-text">{{ error() }}</p> }<div class="review-actions"><button class="btn btn--ghost" type="button" (click)="reviewAction.set(null)">Cancelar</button><button class="btn btn--primary" type="submit" [disabled]="saving()">Confirmar</button></div></form> }
+  </div><footer class="dialog__foot">@if (canReviewSession(detail()!) && !reviewAction()) { <button class="btn btn--ghost" type="button" (click)="startReview('reject')">Rechazar</button><button class="btn btn--primary" type="button" (click)="startReview('approve')">Aprobar cierre</button> }<button class="btn btn--ghost" type="button" (click)="detail.set(null); reviewAction.set(null)">Cerrar</button></footer></section></div> }

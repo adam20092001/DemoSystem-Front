@@ -97,6 +97,7 @@ export interface PaymentsByMethodRow {
   saleNumber: string;
   customerName: string;
   method: PaymentMethod;
+  methodName: string;
   reference: string | null;
   amount: string;
   status: PaymentStatus;

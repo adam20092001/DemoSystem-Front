@@ -1,12 +1,14 @@
 <header class="page-head">
   <div>
-    <p class="eyebrow">Resumen operativo</p>
-    <h1>Hola, {{ auth.userName() }}</h1>
-    <p class="page-sub">Revisa ventas, cobranza, cotizaciones, inventario y saldos pendientes.</p>
+    <p class="eyebrow">Centro de operaciones</p>
+    <h1>Resumen comercial</h1>
   </div>
-  <button class="btn btn--primary" type="button" (click)="loadDashboard()" [disabled]="loading()">
-    {{ loading() ? 'Actualizando…' : 'Actualizar' }}
-  </button>
+  <div class="page-actions">
+    <a class="btn btn--ghost" routerLink="/pos">Ir al punto de venta</a>
+    <button class="btn btn--primary" type="button" (click)="loadDashboard()" [disabled]="loading()">
+      {{ loading() ? 'Actualizando…' : 'Actualizar' }}
+    </button>
+  </div>
 </header>
 
 @if (error()) {
@@ -18,7 +20,7 @@
 
 <form class="period-filter surface" (submit)="applyPeriod($event)">
   <div class="period-copy">
-    <span>Período consultado</span>
+    <span>Período</span>
     <strong>
       @if (dashboard(); as data) {
         {{ formatDate(data.period.from) }} — {{ formatDate(data.period.to) }}
@@ -40,41 +42,67 @@
 } @else if (dashboard(); as data) {
   <section class="metrics" aria-label="Indicadores principales">
     @if (data.sales) {
-      <a class="metric surface" routerLink="/sales">
-        <p>Ventas</p><strong>{{ formatMoney(data.sales.total) }}</strong><small>{{ data.sales.count }} operaciones activas</small>
+      <a class="metric metric--sales surface" routerLink="/sales">
+        <span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg></span>
+        <p>Ventas</p><strong>{{ formatMoney(data.sales.total) }}</strong><small>{{ data.sales.count }} operaciones</small>
       </a>
     }
     @if (data.collections) {
       <a class="metric surface" routerLink="/payments">
-        <p>Cobrado</p><strong>{{ formatMoney(data.collections.total) }}</strong><small>{{ data.collections.count }} pagos activos</small>
+        <span class="metric-icon metric-icon--ok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM4 10h16M8 15h4"/></svg></span>
+        <p>Cobrado</p><strong>{{ formatMoney(data.collections.total) }}</strong><small>{{ data.collections.count }} pagos</small>
       </a>
     }
     @if (data.receivables) {
       <a class="metric surface" routerLink="/payments">
-        <p>Por cobrar</p><strong>{{ formatMoney(data.receivables.totalBalance) }}</strong><small>{{ data.receivables.count }} ventas con saldo</small>
+        <span class="metric-icon metric-icon--warn" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        <p>Por cobrar</p><strong>{{ formatMoney(data.receivables.totalBalance) }}</strong><small>{{ data.receivables.count }} ventas</small>
       </a>
     }
     @if (data.quotes) {
       <a class="metric surface" routerLink="/quotes">
-        <p>Cotizaciones</p><strong>{{ data.quotes.total }}</strong><small>Emitidas en el período</small>
+        <span class="metric-icon metric-icon--info" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h4"/></svg></span>
+        <p>Cotizaciones</p><strong>{{ data.quotes.total }}</strong><small>En el período</small>
       </a>
     }
     @if (data.lowStock) {
-      <a class="metric surface" routerLink="/inventory">
-        <p>Stock bajo</p><strong>{{ data.lowStock.count }}</strong><small>Productos requieren atención</small>
+      <a class="metric surface" [class.metric--attention]="data.lowStock.count > 0" routerLink="/inventory">
+        <span class="metric-icon metric-icon--stock" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg></span>
+        <p>Stock bajo</p><strong>{{ data.lowStock.count }}</strong><small>Productos</small>
       </a>
     }
   </section>
 
   <section class="dashboard-grid">
-    @if (data.lowStock) {
-      <article class="panel surface">
+    @if (data.receivables) {
+      <article class="panel surface receivables-panel">
         <header class="panel-head">
-          <div><p class="eyebrow">Inventario actual</p><h2>Productos con stock bajo</h2></div>
-          <a routerLink="/inventory" class="text-link">Ver inventario</a>
+          <div><p class="eyebrow">Seguimiento</p><h2>Saldos más antiguos</h2></div>
+          <a routerLink="/payments" class="text-link">Ver pagos →</a>
+        </header>
+        @if (!data.receivables.oldest.length) {
+          <div class="empty-state"><span class="empty-mark">✓</span><strong>Todo al día</strong><span>No hay cuentas pendientes de cobro.</span></div>
+        } @else {
+          <div class="compact-list">
+            @for (item of data.receivables.oldest; track item.saleId) {
+              <div>
+                <span class="list-identity"><span class="list-avatar">{{ item.customerName.charAt(0) }}</span><span><strong>{{ item.customerName }}</strong><small class="mono">{{ item.saleNumber }}</small></span></span>
+                <span class="list-value"><strong>{{ formatMoney(item.balanceDue) }}</strong><small [class.overdue]="item.daysOutstanding > 15">{{ item.daysOutstanding }} días</small></span>
+              </div>
+            }
+          </div>
+        }
+      </article>
+    }
+
+    @if (data.lowStock) {
+      <article class="panel surface stock-panel">
+        <header class="panel-head">
+          <div><p class="eyebrow">Inventario</p><h2>Stock bajo</h2></div>
+          <a routerLink="/inventory" class="text-link">Ver inventario →</a>
         </header>
         @if (!data.lowStock.items.length) {
-          <p class="empty-state">No hay productos por debajo del mínimo.</p>
+          <div class="empty-state"><span class="empty-mark">✓</span><strong>Inventario estable</strong><span>No hay productos por debajo del mínimo.</span></div>
         } @else {
           <div class="compact-list">
             @for (item of data.lowStock.items; track item.productId) {
@@ -88,36 +116,19 @@
       </article>
     }
 
-    @if (data.receivables) {
-      <article class="panel surface">
-        <header class="panel-head">
-          <div><p class="eyebrow">Cobranza actual</p><h2>Saldos más antiguos</h2></div>
-          <a routerLink="/payments" class="text-link">Ver pagos</a>
-        </header>
-        @if (!data.receivables.oldest.length) {
-          <p class="empty-state">No hay cuentas pendientes de cobro.</p>
-        } @else {
-          <div class="compact-list">
-            @for (item of data.receivables.oldest; track item.saleId) {
-              <div>
-                <span><strong>{{ item.customerName }}</strong><small class="mono">{{ item.saleNumber }}</small></span>
-                <span class="list-value"><strong>{{ formatMoney(item.balanceDue) }}</strong><small>{{ item.daysOutstanding }} días</small></span>
-              </div>
-            }
-          </div>
-        }
-      </article>
-    }
-
     @if (data.quotes) {
       <article class="panel surface quotes-panel">
-        <header class="panel-head"><div><p class="eyebrow">Actividad comercial</p><h2>Cotizaciones por estado</h2></div></header>
-        @if (!data.quotes.byStatus.length) {
-          <p class="empty-state">No hay cotizaciones en el período.</p>
+        <header class="panel-head"><div><p class="eyebrow">Pipeline</p><h2>Cotizaciones por estado</h2></div><strong class="panel-total">{{ data.quotes.total }} total</strong></header>
+        @if (!data.quotes.total) {
+          <div class="empty-state empty-state--compact"><strong>Sin actividad en este período</strong></div>
         } @else {
-          <div class="status-grid">
+          <div class="quote-status-list">
             @for (item of data.quotes.byStatus; track item.status) {
-              <div><span>{{ quoteStatusLabel(item.status) }}</span><strong>{{ item.count }}</strong></div>
+              <div class="quote-status">
+                <span>{{ quoteStatusLabel(item.status) }}</span>
+                <div class="status-track"><span [style.width.%]="quoteShare(item.count, data.quotes.total)"></span></div>
+                <strong>{{ item.count }}</strong>
+              </div>
             }
           </div>
         }

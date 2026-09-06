@@ -1,9 +1,5 @@
 <header class="page-header">
-  <div>
-    <p class="eyebrow">Comercial</p>
-    <h1>Clientes</h1>
-    <p>Administra personas, empresas y prospectos.</p>
-  </div>
+  <h1>Clientes</h1>
   @if (canWrite()) { <button class="btn btn--primary" type="button" (click)="openCreate()">＋ Nuevo cliente</button> }
 </header>
 
@@ -11,10 +7,10 @@
 @if (error()) { <div class="notice notice--error" role="alert"><span>{{ error() }}</span><button type="button" aria-label="Cerrar error" (click)="error.set(null)">×</button></div> }
 
 <section class="metrics" aria-label="Resumen de clientes">
-  <article class="metric"><p>Total encontrado</p><strong>{{ loading() ? '—' : (result()?.total ?? 0) }}</strong><small>Según los filtros actuales</small></article>
-  <article class="metric"><p>Clientes en la página</p><strong>{{ loading() ? '—' : (result()?.data?.length ?? 0) }}</strong><small>Personas y empresas visibles</small></article>
-  <article class="metric"><p>Prospectos visibles</p><strong>{{ loading() ? '—' : visibleStageCount('PROSPECT') }}</strong><small>Pendientes de conversión</small></article>
-  <article class="metric"><p>Bloqueados visibles</p><strong>{{ loading() ? '—' : visibleStatusCount('BLOCKED') }}</strong><small>Requieren revisión</small></article>
+  <article class="metric"><p>Total encontrado</p><strong>{{ loading() ? '—' : (result()?.total ?? 0) }}</strong></article>
+  <article class="metric"><p>Clientes en la página</p><strong>{{ loading() ? '—' : (result()?.data?.length ?? 0) }}</strong></article>
+  <article class="metric"><p>Prospectos visibles</p><strong>{{ loading() ? '—' : visibleStageCount('PROSPECT') }}</strong></article>
+  <article class="metric"><p>Bloqueados visibles</p><strong>{{ loading() ? '—' : visibleStatusCount('BLOCKED') }}</strong></article>
 </section>
 
 <section class="panel">

@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClient } from '../../core/http/api-client.service';
-import { CompanySettings, DocumentSequence, DocumentType, UpdateCompanySettings, UpdateDocumentSequence } from './settings.model';
+import { CompanySettings, DocumentSequence, DocumentType, PosCompanySettings, UpdateCompanySettings, UpdateDocumentSequence } from './settings.model';
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
@@ -9,6 +9,10 @@ export class SettingsService {
 
   getConfiguration(): Observable<CompanySettings> {
     return this.api.get<CompanySettings>('configuration');
+  }
+
+  getPosConfiguration(): Observable<PosCompanySettings> {
+    return this.api.get<PosCompanySettings>('configuration/pos');
   }
 
   updateConfiguration(request: UpdateCompanySettings): Observable<CompanySettings> {

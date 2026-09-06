@@ -1,0 +1,6 @@
+.method-options { display: grid; gap: 12px; margin-top: 18px; }
+
+@media (max-width: 760px) {
+  .page-header { align-items: stretch; }
+  .page-header .btn { width: 100%; }
+}

@@ -155,7 +155,7 @@ export interface ListQuotesQuery {
 export type SaleStatus = 'ACTIVE' | 'CANCELLED';
 export type SalePaymentStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
 export type SaleDeliveryStatus = 'NOT_APPLICABLE' | 'PENDING' | 'DELIVERED' | 'OBSERVED';
-export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'BANK_DEPOSIT' | 'CARD' | 'DIGITAL_WALLET' | 'OTHER';
+export type PaymentMethod = string;
 export type PaymentStatus = 'ACTIVE' | 'CANCELLED';
 export type PaymentCancellationSource = 'MANUAL' | 'SALE_CANCELLATION';
 
@@ -169,6 +169,7 @@ export interface Payment {
   id: string;
   saleId: string;
   method: PaymentMethod;
+  methodName: string;
   amount: string;
   reference: string | null;
   status: PaymentStatus;

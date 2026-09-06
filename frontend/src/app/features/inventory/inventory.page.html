@@ -1,9 +1,5 @@
 <header class="page-header">
-  <div>
-    <p class="eyebrow">Operaciones</p>
-    <h1>Inventario</h1>
-    <p>Consulta existencias, registra entradas y salidas, y controla el stock mínimo.</p>
-  </div>
+  <h1>Inventario</h1>
   @if (canWrite()) {
     <button class="btn btn--primary" type="button" (click)="openMovementForm()">
       <span aria-hidden="true">＋</span>
@@ -30,17 +26,14 @@
   <article class="metric">
     <p>Productos con control</p>
     <strong>{{ loadingLookups() ? '—' : trackedProductsTotal() }}</strong>
-    <small>Productos activos que mueven stock</small>
   </article>
   <article class="metric" [class.metric--alert]="(lowStock()?.total ?? 0) > 0">
     <p>Bajo mínimo</p>
     <strong>{{ loadingLowStock() ? '—' : (lowStock()?.total ?? 0) }}</strong>
-    <small>Incluye productos con stock en cero</small>
   </article>
   <article class="metric">
     <p>Movimientos registrados</p>
     <strong>{{ loadingMovements() ? '—' : (movements()?.total ?? 0) }}</strong>
-    <small>Historial de entradas y salidas</small>
   </article>
   <article class="metric metric--stock">
     <p>Stock consultado</p>
@@ -51,9 +44,7 @@
 
 <section class="stock-inspector surface">
   <div class="stock-copy">
-    <p class="eyebrow">Consulta rápida</p>
     <h2>Stock actual por producto</h2>
-    <p>Consulta las existencias disponibles y el nivel mínimo definido.</p>
   </div>
   <label class="field stock-selector">
     <span>Producto</span>

@@ -66,6 +66,10 @@ export class DashboardPage implements OnInit {
     }[status];
   }
 
+  protected quoteShare(count: number, total: number): number {
+    return total > 0 ? Math.max(3, Math.round(count / total * 100)) : 0;
+  }
+
   protected loadDashboard(): void {
     this.loading.set(true);
     this.error.set(null);

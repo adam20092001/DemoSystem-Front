@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
+import { CashSessionsService } from '../cash-sessions/cash-sessions.service';
+import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
+import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import { Payment, PaymentMethod, PaymentStatus, ReceivableItem } from './commercial.model';
 import { CommercialService } from './commercial.service';
 import {
-  PAYMENT_METHOD_LABELS,
-  PAYMENT_METHODS,
   dateTime,
   money,
   pageRange,
@@ -28,6 +29,8 @@ type PaymentsTab = 'payments' | 'receivables';
 export class PaymentsPage implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly commercial = inject(CommercialService);
+  protected readonly cashSessions = inject(CashSessionsService);
+  private readonly paymentMethodsService = inject(PaymentMethodsService);
   protected readonly canWrite = computed(() => ['ADMIN', 'SELLER'].includes(this.auth.role()));
   protected readonly isAdmin = computed(() => this.auth.role() === 'ADMIN');
   protected readonly activeTab = signal<PaymentsTab>('payments');
@@ -41,7 +44,7 @@ export class PaymentsPage implements OnInit {
   protected readonly cancelPayment = signal<Payment | null>(null);
   protected readonly receivablePayment = signal<ReceivableItem | null>(null);
 
-  protected readonly paymentMethods = PAYMENT_METHODS;
+  protected readonly paymentMethods = signal<PaymentMethodDefinition[]>([]);
   protected readonly paymentStatuses: PaymentStatus[] = ['ACTIVE', 'CANCELLED'];
   protected readonly pageSizes = [10, 20, 50];
   protected paymentMethodFilter = '';
@@ -57,7 +60,12 @@ export class PaymentsPage implements OnInit {
   protected registerAmount = '';
   protected registerReference = '';
 
-  ngOnInit(): void { this.loadPayments(); this.loadReceivables(); }
+  ngOnInit(): void {
+    this.loadPaymentMethods();
+    if (this.canWrite()) this.cashSessions.refreshCurrent().pipe(take(1)).subscribe({ error: () => undefined });
+    this.loadPayments();
+    this.loadReceivables();
+  }
   protected switchTab(tab: PaymentsTab): void { this.activeTab.set(tab); this.error.set(null); }
   protected applyPaymentFilters(event: Event): void { event.preventDefault(); this.loadPayments(1); }
   protected clearPaymentFilters(): void { this.paymentMethodFilter = ''; this.paymentStatusFilter = ''; this.paidFrom = ''; this.paidTo = ''; this.loadPayments(1); }
@@ -82,8 +90,12 @@ export class PaymentsPage implements OnInit {
   }
 
   protected openRegisterPayment(item: ReceivableItem): void {
+    if (!this.cashSessions.hasOpenSession()) {
+      this.error.set('Abre tu caja antes de registrar un cobro.');
+      return;
+    }
     this.receivablePayment.set(item);
-    this.registerMethod = 'CASH';
+    this.registerMethod = this.paymentMethods().find(method => method.code === 'CASH')?.code ?? this.paymentMethods()[0]?.code ?? '';
     this.registerAmount = item.balanceDue;
     this.registerReference = '';
     this.error.set(null);
@@ -93,9 +105,11 @@ export class PaymentsPage implements OnInit {
     event.preventDefault();
     const item = this.receivablePayment();
     if (!item) return;
+    if (!this.cashSessions.hasOpenSession()) { this.error.set('Abre tu caja antes de registrar un cobro.'); return; }
+    if (!this.registerMethod) { this.error.set('Selecciona un método de pago disponible.'); return; }
     if (!validAmount(this.registerAmount)) { this.error.set('El pago debe ser mayor que cero y tener máximo 2 decimales.'); return; }
     if (Number(this.registerAmount) > Number(item.balanceDue)) { this.error.set('El pago no puede superar el saldo pendiente.'); return; }
-    if (requiresPaymentReference(this.registerMethod) && !this.registerReference.trim()) { this.error.set('Ingresa la referencia del pago.'); return; }
+    if (requiresPaymentReference(this.paymentMethods(), this.registerMethod) && !this.registerReference.trim()) { this.error.set('Ingresa la referencia del pago.'); return; }
     this.actionLoading.set(true);
     this.commercial.registerPayment(item.saleId, { method: this.registerMethod, amount: this.registerAmount.trim(), ...(this.registerReference.trim() ? { reference: this.registerReference.trim() } : {}) }).pipe(take(1), finalize(() => this.actionLoading.set(false))).subscribe({
       next: result => { this.receivablePayment.set(null); this.notice.set(`Pago registrado en ${result.sale.number}. Saldo: ${money(result.sale.balanceDue)}.`); this.loadPayments(1); this.loadReceivables(this.receivables()?.page ?? 1); },
@@ -103,7 +117,7 @@ export class PaymentsPage implements OnInit {
     });
   }
 
-  protected methodLabel(value: PaymentMethod): string { return PAYMENT_METHOD_LABELS[value]; }
+  protected selectedMethodRequiresReference(): boolean { return requiresPaymentReference(this.paymentMethods(), this.registerMethod); }
   protected statusLabel(value: PaymentStatus): string { return value === 'ACTIVE' ? 'Activo' : 'Anulado'; }
   protected formatMoney(value: string | number): string { return money(value); }
   protected formatDate(value: string): string { return dateTime(value); }
@@ -115,11 +129,23 @@ export class PaymentsPage implements OnInit {
 
   protected loadPayments(page = 1): void {
     this.loadingPayments.set(true); this.error.set(null);
-    this.commercial.listPayments({ page, limit: this.paymentPageSize, ...(this.paymentMethodFilter ? { method: this.paymentMethodFilter as PaymentMethod } : {}), ...(this.paymentStatusFilter ? { status: this.paymentStatusFilter as PaymentStatus } : {}), ...(this.paidFrom ? { paidFrom: this.paidFrom } : {}), ...(this.paidTo ? { paidTo: this.paidTo } : {}) }).pipe(take(1), finalize(() => this.loadingPayments.set(false))).subscribe({ next: result => this.payments.set(result), error: error => this.error.set(requestErrorMessage(error)) });
+    this.commercial.listPayments({ page, limit: this.paymentPageSize, ...(this.paymentMethodFilter ? { method: this.paymentMethodFilter } : {}), ...(this.paymentStatusFilter ? { status: this.paymentStatusFilter as PaymentStatus } : {}), ...(this.paidFrom ? { paidFrom: this.paidFrom } : {}), ...(this.paidTo ? { paidTo: this.paidTo } : {}) }).pipe(take(1), finalize(() => this.loadingPayments.set(false))).subscribe({ next: result => this.payments.set(result), error: error => this.error.set(requestErrorMessage(error)) });
   }
 
   protected loadReceivables(page = 1): void {
     this.loadingReceivables.set(true); this.error.set(null);
     this.commercial.listReceivables({ page, limit: this.receivablePageSize, ...(this.receivableFrom ? { confirmedFrom: this.receivableFrom } : {}), ...(this.receivableTo ? { confirmedTo: this.receivableTo } : {}) }).pipe(take(1), finalize(() => this.loadingReceivables.set(false))).subscribe({ next: result => this.receivables.set(result), error: error => this.error.set(requestErrorMessage(error)) });
+  }
+
+  private loadPaymentMethods(): void {
+    this.paymentMethodsService.listActive().pipe(take(1)).subscribe({
+      next: methods => {
+        this.paymentMethods.set(methods);
+        if (!methods.some(method => method.code === this.registerMethod)) {
+          this.registerMethod = methods.find(method => method.code === 'CASH')?.code ?? methods[0]?.code ?? '';
+        }
+      },
+      error: error => this.error.set(requestErrorMessage(error)),
+    });
   }
 }

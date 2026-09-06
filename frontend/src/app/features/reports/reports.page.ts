@@ -7,14 +7,13 @@ import { CatalogService } from '../catalog/catalog.service';
 import {
   Customer,
   CustomerType,
-  PaymentMethod,
   PaymentStatus,
   QuoteStatus,
 } from '../commercial/commercial.model';
 import { CommercialService } from '../commercial/commercial.service';
+import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
+import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import {
-  PAYMENT_METHOD_LABELS,
-  PAYMENT_METHODS,
   dateTime,
   money,
   pageRange,
@@ -43,6 +42,7 @@ export class ReportsPage implements OnInit {
   private readonly reports = inject(ReportsService);
   private readonly catalog = inject(CatalogService);
   private readonly commercial = inject(CommercialService);
+  private readonly paymentMethodsService = inject(PaymentMethodsService);
 
   protected readonly activeReport = signal<ReportKind>('sales-by-product');
   protected readonly result = signal<PaginatedResponse<ReportRow> | null>(null);
@@ -53,6 +53,7 @@ export class ReportsPage implements OnInit {
   protected readonly customers = signal<Customer[]>([]);
   protected readonly sellers = signal<ReportUser[]>([]);
   protected readonly paymentCreators = signal<ReportUser[]>([]);
+  protected readonly paymentMethods = signal<PaymentMethodDefinition[]>([]);
 
   protected readonly reportTabs: Array<{ kind: ReportKind; label: string }> = [
     { kind: 'sales-by-product', label: 'Por producto' },
@@ -62,7 +63,6 @@ export class ReportsPage implements OnInit {
     { kind: 'payments-by-method', label: 'Pagos' },
   ];
   protected readonly quoteStatuses: QuoteStatus[] = ['PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CONVERTED'];
-  protected readonly paymentMethods = PAYMENT_METHODS;
   protected readonly paymentStatuses: PaymentStatus[] = ['ACTIVE', 'CANCELLED'];
   protected readonly customerTypes: CustomerType[] = ['PERSON', 'COMPANY'];
   protected readonly pageSizes = [10, 20, 50, 100];
@@ -82,6 +82,7 @@ export class ReportsPage implements OnInit {
 
   ngOnInit(): void {
     this.loadLookups();
+    this.loadPaymentMethods();
     this.loadReport();
   }
 
@@ -166,16 +167,6 @@ export class ReportsPage implements OnInit {
     }[this.activeReport()];
   }
 
-  protected description(): string {
-    return {
-      'sales-by-product': 'Productos vendidos, cantidades y montos acumulados.',
-      'sales-by-customer': 'Ventas, pagos y saldos agrupados por cliente.',
-      'sales-by-seller': 'Resultados comerciales y cobranza por vendedor.',
-      'quotes-by-status': 'Historial de cotizaciones y ventas resultantes.',
-      'payments-by-method': 'Historial de pagos con método, referencia y responsable.',
-    }[this.activeReport()];
-  }
-
   protected visibleAmount(): number {
     switch (this.activeReport()) {
       case 'sales-by-product': return this.productRows().reduce((sum, row) => sum + Number(row.totalSold), 0);
@@ -189,7 +180,6 @@ export class ReportsPage implements OnInit {
   protected formatMoney(value: string | number): string { return money(value); }
   protected formatDate(value: string): string { return dateTime(value); }
   protected range(): string { return pageRange(this.result()); }
-  protected paymentMethodLabel(value: PaymentMethod): string { return PAYMENT_METHOD_LABELS[value]; }
   protected paymentStatusLabel(value: PaymentStatus): string { return value === 'ACTIVE' ? 'Activo' : 'Anulado'; }
   protected customerTypeLabel(value: CustomerType | null): string { return value === 'PERSON' ? 'Persona' : value === 'COMPANY' ? 'Empresa' : 'Sin tipo'; }
   protected quoteStatusLabel(value: QuoteStatus): string {
@@ -234,7 +224,7 @@ export class ReportsPage implements OnInit {
       case 'payments-by-method':
         request$ = this.reports.paymentsByMethod({
           ...common,
-          ...(this.paymentMethod ? { method: this.paymentMethod as PaymentMethod } : {}),
+          ...(this.paymentMethod ? { method: this.paymentMethod } : {}),
           ...(this.paymentStatus ? { status: this.paymentStatus as PaymentStatus } : {}),
           ...(this.paymentCreatorId ? { createdByUserId: this.paymentCreatorId } : {}),
         });
@@ -254,6 +244,13 @@ export class ReportsPage implements OnInit {
     this.catalog.listCategories({ page: 1, limit: 100 }).pipe(take(1)).subscribe({ next: (result) => this.categories.set(result.data), error: () => undefined });
     this.catalog.listProducts({ page: 1, limit: 100 }).pipe(take(1)).subscribe({ next: (result) => this.products.set(result.data), error: () => undefined });
     this.commercial.listCustomers({ page: 1, limit: 100 }).pipe(take(1)).subscribe({ next: (result) => this.customers.set(result.data), error: () => undefined });
+  }
+
+  private loadPaymentMethods(): void {
+    this.paymentMethodsService.listActive().pipe(take(1)).subscribe({
+      next: methods => this.paymentMethods.set(methods),
+      error: () => undefined,
+    });
   }
 
   private mergeUsers(target: { set(value: ReportUser[]): void; (): ReportUser[] }, users: ReportUser[]): void {

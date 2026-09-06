@@ -12,13 +12,17 @@
       <span class="brand-text"><strong>IMDIMAQ</strong><small>Gestión comercial</small></span>
     </a>
 
-    <nav>
-      <span class="nav-caption">Espacio de trabajo</span>
-      @for (item of visibleNav(); track item.route) {
-        <a [routerLink]="item.route" routerLinkActive="active" (click)="menuOpen.set(false)">
-          <span class="nav-icon" [innerHTML]="icon(item.icon)"></span>
-          <span class="nav-label">{{ item.label }}</span>
-        </a>
+    <nav aria-label="Navegación principal">
+      @for (section of visibleNavSections(); track section.label) {
+        <section class="nav-section">
+          <span class="nav-caption">{{ section.label }}</span>
+          @for (item of section.items; track item.route) {
+            <a [routerLink]="item.route" routerLinkActive="active" (click)="menuOpen.set(false)">
+              <span class="nav-icon" [innerHTML]="icon(item.icon)"></span>
+              <span class="nav-label">{{ item.label }}</span>
+            </a>
+          }
+        </section>
       }
     </nav>
 
@@ -35,8 +39,8 @@
     <header class="topbar">
       <button class="menu-button btn btn--quiet" (click)="menuOpen.set(!menuOpen())" aria-label="Abrir menú">☰</button>
       <div class="context">
-        <span class="context-title">{{ auth.userName() }}</span>
-        <span class="context-sub">{{ roleLabel(auth.role()) }}</span>
+        <span class="context-title">Centro de operaciones</span>
+        <span class="context-sub">{{ todayLabel }}</span>
       </div>
       @if (auth.roles().length > 1) {
         <label class="role-switcher">
