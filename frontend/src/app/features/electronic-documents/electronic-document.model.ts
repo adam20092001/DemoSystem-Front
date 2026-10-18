@@ -5,7 +5,7 @@ export interface ElectronicDocumentItem { lineNumber: number; productSku: string
 export interface ElectronicDocumentListItem {
   id: string; saleId: string; saleNumber: string; documentType: FiscalDocumentType; series: string; number: number; fullNumber: string;
   status: ElectronicDocumentStatus; currencyCode: string; customerDocumentType: string | null; customerDocumentNumber: string | null; customerName: string;
-  subtotal: string; discountAmount: string; taxableBase: string; taxAmount: string; total: string; providerCode: string; providerStatus: string | null;
+  subtotal: string; discountAmount: string; taxableBase: string; taxAmount: string; total: string; pricesIncludeTax: boolean; itemsTotal: string; customerDiscountAmount: string; providerCode: string; providerStatus: string | null;
   issuedAt: string; lastSubmittedAt: string | null; acceptedAt: string | null; rejectedAt: string | null; createdAt: string; updatedAt: string;
 }
 export interface ElectronicDocument extends ElectronicDocumentListItem {

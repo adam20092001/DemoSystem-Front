@@ -3,7 +3,6 @@ import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
-import { CashSessionsService } from '../cash-sessions/cash-sessions.service';
 import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import { Payment, PaymentMethod, PaymentStatus, ReceivableItem } from './commercial.model';
@@ -29,7 +28,6 @@ type PaymentsTab = 'payments' | 'receivables';
 export class PaymentsPage implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly commercial = inject(CommercialService);
-  protected readonly cashSessions = inject(CashSessionsService);
   private readonly paymentMethodsService = inject(PaymentMethodsService);
   protected readonly canWrite = computed(() => ['ADMIN', 'SELLER'].includes(this.auth.role()));
   protected readonly isAdmin = computed(() => this.auth.role() === 'ADMIN');
@@ -62,7 +60,6 @@ export class PaymentsPage implements OnInit {
 
   ngOnInit(): void {
     this.loadPaymentMethods();
-    if (this.canWrite()) this.cashSessions.refreshCurrent().pipe(take(1)).subscribe({ error: () => undefined });
     this.loadPayments();
     this.loadReceivables();
   }
@@ -90,10 +87,6 @@ export class PaymentsPage implements OnInit {
   }
 
   protected openRegisterPayment(item: ReceivableItem): void {
-    if (!this.cashSessions.hasOpenSession()) {
-      this.error.set('Abre tu caja antes de registrar un cobro.');
-      return;
-    }
     this.receivablePayment.set(item);
     this.registerMethod = this.paymentMethods().find(method => method.code === 'CASH')?.code ?? this.paymentMethods()[0]?.code ?? '';
     this.registerAmount = item.balanceDue;
@@ -105,7 +98,6 @@ export class PaymentsPage implements OnInit {
     event.preventDefault();
     const item = this.receivablePayment();
     if (!item) return;
-    if (!this.cashSessions.hasOpenSession()) { this.error.set('Abre tu caja antes de registrar un cobro.'); return; }
     if (!this.registerMethod) { this.error.set('Selecciona un método de pago disponible.'); return; }
     if (!validAmount(this.registerAmount)) { this.error.set('El pago debe ser mayor que cero y tener máximo 2 decimales.'); return; }
     if (Number(this.registerAmount) > Number(item.balanceDue)) { this.error.set('El pago no puede superar el saldo pendiente.'); return; }

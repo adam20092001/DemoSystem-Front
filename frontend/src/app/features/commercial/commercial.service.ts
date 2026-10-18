@@ -85,10 +85,10 @@ export class CommercialService {
     return this.api.post<SaleDetail, CreateSaleRequest>('sales', request);
   }
 
-  createSaleFromQuote(quoteId: string, payment?: PaymentRequest): Observable<SaleDetail> {
-    return this.api.post<SaleDetail, { payment?: PaymentRequest }>(
+  createSaleFromQuote(quoteId: string, payments?: PaymentRequest[]): Observable<SaleDetail> {
+    return this.api.post<SaleDetail, { payments?: PaymentRequest[] }>(
       `sales/from-quote/${quoteId}`,
-      payment ? { payment } : {},
+      payments?.length ? { payments } : {},
     );
   }
 

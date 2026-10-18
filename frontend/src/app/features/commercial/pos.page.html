@@ -3,21 +3,10 @@
     <p class="eyebrow">Operación comercial</p>
     <h1>Punto de venta</h1>
   </div>
-  <div class="pos-session" [class.pos-session--open]="cashSessions.hasOpenSession()">
-    <span class="session-dot" aria-hidden="true"></span>
-    {{ cashSessions.hasOpenSession() ? 'Caja abierta' : 'Caja cerrada' }}
-  </div>
 </header>
 
 @if (error()) {
   <div class="notice notice--error"><span>{{ error() }}</span><button type="button" aria-label="Cerrar mensaje" (click)="error.set(null)">×</button></div>
-}
-
-@if (!loading() && !cashSessions.hasOpenSession()) {
-  <div class="notice notice--warn cash-warning">
-    <span>Abre una caja para registrar pagos. Las ventas a crédito siguen disponibles.</span>
-    <a class="btn btn--ghost" href="/cash-sessions">Abrir caja</a>
-  </div>
 }
 
 <form class="pos-workspace" (submit)="submitSale($event)">
@@ -51,6 +40,9 @@
             <button
               class="product-card"
               [class.product-card--selected]="isInCart(product.id)"
+              [class.product-card--out]="stockState(product) === 'out'"
+              [class.product-card--low]="stockState(product) === 'low'"
+              [disabled]="stockState(product) === 'out'"
               type="button"
               (click)="addProduct(product)"
             >
@@ -68,7 +60,9 @@
               </span>
               <span class="product-meta">
                 @if (product.isInventoryTracked) {
-                  <small>Stock {{ product.stockCurrent }} {{ product.unit.abbreviation }}</small>
+                  <strong class="stock-badge" [class.stock-badge--out]="stockState(product) === 'out'" [class.stock-badge--low]="stockState(product) === 'low'">
+                    {{ stockState(product) === 'out' ? 'Sin stock' : ('Stock: ' + product.stockCurrent + ' ' + product.unit.abbreviation) }}
+                  </strong>
                 } @else {
                   <small>Servicio</small>
                 }
@@ -99,11 +93,6 @@
         </select>
       </label>
 
-      <label class="field discount-field">
-        <span>Descuento</span>
-        <span class="money-input"><span>S/</span><input name="posDiscount" [(ngModel)]="discountAmount" inputmode="decimal" placeholder="0.00"></span>
-      </label>
-
       <section class="checkout-cart" aria-label="Productos seleccionados">
         @if (!lines.length) {
           <div class="cart-empty">
@@ -120,6 +109,7 @@
                     <small class="mono">{{ product.sku }}</small>
                     <strong>{{ product.name }}</strong>
                     <span>{{ formatMoney(product.salePrice) }} / {{ product.unit.abbreviation }}</span>
+                    @if (product.isInventoryTracked) { <strong class="cart-stock" [class.cart-stock--low]="stockState(product) === 'low'">Disponible: {{ product.stockCurrent }} {{ product.unit.abbreviation }}</strong> }
                   </div>
                   <strong class="cart-line-total">{{ formatMoney(lineTotal(line)) }}</strong>
                   <div class="quantity-control" aria-label="Cantidad">
@@ -127,6 +117,7 @@
                     <input class="mono" [name]="'posQuantity' + line.key" [(ngModel)]="line.quantity" inputmode="decimal" aria-label="Cantidad de producto">
                     <button type="button" (click)="changeQuantity(line, 1)" aria-label="Aumentar cantidad">+</button>
                   </div>
+                  <label class="line-discount"><span>Descuento</span><span class="money-input"><span>S/</span><input [name]="'posLineDiscount' + line.key" [(ngModel)]="line.discount" inputmode="decimal" placeholder="0.00"></span></label>
                   <button class="remove-product" type="button" aria-label="Quitar producto" (click)="removeLine(line.key)">×</button>
                 </article>
               }
@@ -136,29 +127,31 @@
       </section>
 
       <div class="totals">
-        <div><span>Subtotal</span><strong>{{ formatMoney(subtotal()) }}</strong></div>
-        <div><span>Descuento</span><strong>− {{ formatMoney(discountAmount || 0) }}</strong></div>
+        <div><span>Total de productos</span><strong>{{ formatMoney(subtotal()) }}</strong></div>
+        <div><span>Descuentos por producto</span><strong>− {{ formatMoney(totalDiscount()) }}</strong></div>
         @if (settings()?.taxEnabled) {
-          <div><span>IGV ({{ settings()!.taxRate }}%)</span><strong>{{ formatMoney(taxAmount()) }}</strong></div>
+          <div><span>Base imponible</span><strong>{{ formatMoney(taxableBase()) }}</strong></div>
+          <div><span>IGV incluido ({{ settings()!.taxRate }}%)</span><strong>{{ formatMoney(taxAmount()) }}</strong></div>
         }
         <div class="total-row"><span>Total</span><strong>{{ formatMoney(total()) }}</strong></div>
       </div>
 
-      <section class="payment-block" [class.payment-block--disabled]="!cashSessions.hasOpenSession()">
+      <section class="payment-block">
         <label class="payment-toggle">
-          <input type="checkbox" name="posPaymentEnabled" [ngModel]="paymentEnabled" (ngModelChange)="togglePayment($event)" [disabled]="!cashSessions.hasOpenSession()">
-          <span><strong>Registrar pago ahora</strong><small>{{ cashSessions.hasOpenSession() ? 'También puedes dejar saldo pendiente.' : 'Necesitas abrir una caja.' }}</small></span>
+          <input type="checkbox" name="posPaymentEnabled" [ngModel]="paymentEnabled" (ngModelChange)="togglePayment($event)">
+          <span><strong>Registrar pago ahora</strong><small>Puedes combinar hasta 10 pagos o dejar saldo pendiente.</small></span>
         </label>
 
         @if (paymentEnabled) {
-          <div class="payment-fields">
-            <label class="field"><span>Método *</span><select class="input" name="posPaymentMethod" [(ngModel)]="paymentMethod">@for (method of paymentMethods(); track method.id) { <option [ngValue]="method.code">{{ method.name }}</option> }</select></label>
-            <label class="field">
-              <span class="field-label-row"><span>Monto *</span><button type="button" (click)="setFullPayment()">Usar total</button></span>
-              <input class="input mono" name="posPaymentAmount" [(ngModel)]="paymentAmount" inputmode="decimal" placeholder="0.00">
-            </label>
-            <label class="field"><span>Referencia{{ selectedMethodRequiresReference() ? ' *' : '' }}</span><input class="input" name="posPaymentReference" [(ngModel)]="paymentReference" maxlength="100" placeholder="Voucher o autorización"></label>
-          </div>
+          @for (payment of paymentLines; track payment.key; let index = $index) {
+            <div class="payment-fields">
+              <label class="field"><span>Método {{ index + 1 }} *</span><select class="input" [name]="'posPaymentMethod' + payment.key" [(ngModel)]="payment.method">@for (method of paymentMethods(); track method.id) { <option [ngValue]="method.code">{{ method.name }}</option> }</select></label>
+              <label class="field"><span class="field-label-row"><span>Monto *</span><button type="button" (click)="setRemainingPayment(payment)">Completar saldo</button></span><input class="input mono" [name]="'posPaymentAmount' + payment.key" [(ngModel)]="payment.amount" inputmode="decimal" placeholder="0.00"></label>
+              <label class="field"><span>Referencia{{ selectedMethodRequiresReference(payment) ? ' *' : '' }}</span><input class="input" [name]="'posPaymentReference' + payment.key" [(ngModel)]="payment.reference" maxlength="100" placeholder="Voucher o autorización"></label>
+              <button class="icon-button" type="button" aria-label="Quitar pago" (click)="removePayment(payment.key)">×</button>
+            </div>
+          }
+          <div class="field-label-row"><button class="btn btn--ghost" type="button" (click)="addPayment()" [disabled]="paymentLines.length >= 10">＋ Otro método</button><strong>Pagos: {{ formatMoney(paymentsTotal()) }}</strong></div>
         }
       </section>
     </div>

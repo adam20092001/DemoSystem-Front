@@ -16,6 +16,14 @@ export interface User {
   updatedAt: string;
 }
 
+export interface UserLookup {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  status: UserStatus;
+}
+
 export interface ListUsersQuery {
   page: number;
   limit: number;

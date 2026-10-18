@@ -5,7 +5,6 @@ import { AuthService } from '../../core/auth/auth.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
 import { ProductListItem } from '../catalog/catalog.model';
 import { CatalogService } from '../catalog/catalog.service';
-import { CashSessionsService } from '../cash-sessions/cash-sessions.service';
 import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import {
@@ -32,6 +31,7 @@ import {
 
 interface QuoteFormLine { key: number; productId: string; quantity: string; }
 interface QuoteForm { customerId: string; expirationDate: string; discountAmount: string; notes: string; items: QuoteFormLine[]; }
+interface ConversionPaymentLine { key: number; method: PaymentMethod; amount: string; reference: string; }
 type QuoteAction = 'accept' | 'reject';
 
 @Component({
@@ -45,7 +45,6 @@ export class QuotesPage implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly commercial = inject(CommercialService);
   private readonly catalog = inject(CatalogService);
-  protected readonly cashSessions = inject(CashSessionsService);
   private readonly paymentMethodsService = inject(PaymentMethodsService);
 
   protected readonly canWrite = computed(() => ['ADMIN', 'SELLER'].includes(this.auth.role()));
@@ -75,15 +74,13 @@ export class QuotesPage implements OnInit {
   protected pageSize = 20;
   protected form: QuoteForm = emptyQuoteForm();
   protected conversionPaymentEnabled = false;
-  protected conversionPaymentMethod: PaymentMethod = 'CASH';
-  protected conversionPaymentAmount = '';
-  protected conversionPaymentReference = '';
+  protected conversionPayments: ConversionPaymentLine[] = [];
   private lineKey = 1;
+  private conversionPaymentKey = 1;
 
   ngOnInit(): void {
     this.loadLookups();
     this.loadPaymentMethods();
-    if (this.canWrite()) this.cashSessions.refreshCurrent().pipe(take(1)).subscribe({ error: () => undefined });
     this.loadQuotes();
   }
 
@@ -191,9 +188,7 @@ export class QuotesPage implements OnInit {
   protected openConversion(quote: QuoteListItem | QuoteDetail): void {
     this.convertQuote.set(quote);
     this.conversionPaymentEnabled = false;
-    this.conversionPaymentMethod = this.defaultPaymentMethod();
-    this.conversionPaymentAmount = '';
-    this.conversionPaymentReference = '';
+    this.conversionPayments = [];
     this.error.set(null);
   }
 
@@ -201,19 +196,19 @@ export class QuotesPage implements OnInit {
     event.preventDefault();
     const quote = this.convertQuote();
     if (!quote) return;
-    let payment: PaymentRequest | undefined;
+    let payments: PaymentRequest[] | undefined;
     if (this.conversionPaymentEnabled) {
-      if (!this.cashSessions.hasOpenSession()) { this.error.set('Abre tu caja antes de registrar un cobro.'); return; }
-      const error = validatePayment(this.paymentMethods(), this.conversionPaymentMethod, this.conversionPaymentAmount, this.conversionPaymentReference);
-      if (error) { this.error.set(error); return; }
-      payment = {
-        method: this.conversionPaymentMethod,
-        amount: this.conversionPaymentAmount.trim(),
-        ...(this.conversionPaymentReference.trim() ? { reference: this.conversionPaymentReference.trim() } : {}),
-      };
+      if (!this.conversionPayments.length || this.conversionPayments.length > 10) { this.error.set('Registra entre 1 y 10 pagos iniciales.'); return; }
+      for (const line of this.conversionPayments) {
+        const error = validatePayment(this.paymentMethods(), line.method, line.amount, line.reference);
+        if (error) { this.error.set(error); return; }
+      }
+      const total = this.conversionPayments.reduce((sum, line) => sum + Number(line.amount || 0), 0);
+      if (total > Number(quote.total)) { this.error.set('La suma de los pagos no puede superar el total.'); return; }
+      payments = this.conversionPayments.map(line => ({ method: line.method, amount: line.amount.trim(), ...(line.reference.trim() ? { reference: line.reference.trim() } : {}) }));
     }
     this.actionLoading.set(true);
-    this.commercial.createSaleFromQuote(quote.id, payment).pipe(take(1), finalize(() => this.actionLoading.set(false))).subscribe({
+    this.commercial.createSaleFromQuote(quote.id, payments).pipe(take(1), finalize(() => this.actionLoading.set(false))).subscribe({
       next: sale => {
         this.convertQuote.set(null);
         this.detail.set(null);
@@ -232,7 +227,13 @@ export class QuotesPage implements OnInit {
   protected formatMoney(value: string | number, currency = 'PEN'): string { return money(value, currency); }
   protected formatDate(value: string): string { return shortDate(value); }
   protected range(): string { return pageRange(this.result()); }
-  protected selectedMethodRequiresReference(): boolean { return requiresPaymentReference(this.paymentMethods(), this.conversionPaymentMethod); }
+  protected selectedMethodRequiresReference(line: ConversionPaymentLine): boolean { return requiresPaymentReference(this.paymentMethods(), line.method); }
+  protected toggleConversionPayment(enabled: boolean): void {
+    this.conversionPaymentEnabled = enabled;
+    this.conversionPayments = enabled ? [this.newConversionPayment(this.convertQuote()?.total ?? '')] : [];
+  }
+  protected addConversionPayment(): void { if (this.conversionPayments.length < 10) this.conversionPayments = [...this.conversionPayments, this.newConversionPayment()]; }
+  protected removeConversionPayment(key: number): void { this.conversionPayments = this.conversionPayments.filter(line => line.key !== key); if (!this.conversionPayments.length) this.conversionPaymentEnabled = false; }
   protected statusLabel(status: QuoteStatus): string { return { PENDING: 'Pendiente', ACCEPTED: 'Aceptada', REJECTED: 'Rechazada', EXPIRED: 'Vencida', CONVERTED: 'Convertida' }[status]; }
   protected statusClass(status: QuoteStatus): string { return status === 'ACCEPTED' ? 'badge--ok' : status === 'PENDING' ? 'badge--warn' : status === 'CONVERTED' ? 'badge--info' : status === 'REJECTED' ? 'badge--danger' : 'badge--neutral'; }
   protected canConvert(status: QuoteStatus): boolean { return this.canWrite() && ['PENDING', 'ACCEPTED'].includes(status); }
@@ -265,7 +266,6 @@ export class QuotesPage implements OnInit {
     this.paymentMethodsService.listActive().pipe(take(1)).subscribe({
       next: methods => {
         this.paymentMethods.set(methods);
-        if (!methods.some(method => method.code === this.conversionPaymentMethod)) this.conversionPaymentMethod = this.defaultPaymentMethod();
       },
       error: error => this.error.set(requestErrorMessage(error)),
     });
@@ -273,6 +273,10 @@ export class QuotesPage implements OnInit {
 
   private defaultPaymentMethod(): string {
     return this.paymentMethods().find(method => method.code === 'CASH')?.code ?? this.paymentMethods()[0]?.code ?? '';
+  }
+
+  private newConversionPayment(amount = ''): ConversionPaymentLine {
+    return { key: this.conversionPaymentKey++, method: this.defaultPaymentMethod(), amount, reference: '' };
   }
 
   private nextLineKey(): number { return this.lineKey++; }

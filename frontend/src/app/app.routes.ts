@@ -20,7 +20,6 @@ export const routes: Routes = [
     { path: 'quotes', canActivate: [roleGuard], data: { roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] }, loadComponent: () => import('./features/commercial/quotes.page').then(m => m.QuotesPage) },
     { path: 'sales', canActivate: [roleGuard], data: { roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] }, loadComponent: () => import('./features/commercial/sales.page').then(m => m.SalesPage) },
     { path: 'payments', canActivate: [roleGuard], data: { roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] }, loadComponent: () => import('./features/commercial/payments.page').then(m => m.PaymentsPage) },
-    { path: 'cash-sessions', canActivate: [roleGuard], data: { roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] }, loadComponent: () => import('./features/cash-sessions/cash-sessions.page').then(m => m.CashSessionsPage) },
     { path: 'accounting', canActivate: [roleGuard], data: { roles: ['ADMIN', 'MANAGEMENT'] }, loadComponent: () => import('./features/accounting/accounting.page').then(m => m.AccountingPage) },
     { path: 'reports', canActivate: [roleGuard], data: { roles: ['ADMIN', 'MANAGEMENT', 'SELLER'] }, loadComponent: () => import('./features/reports/reports.page').then(m => m.ReportsPage) },
     { path: 'electronic-documents', canActivate: [roleGuard], data: { roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] }, loadComponent: () => import('./features/electronic-documents/electronic-documents.page').then(m => m.ElectronicDocumentsPage) },

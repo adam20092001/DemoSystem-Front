@@ -30,6 +30,7 @@ import {
   SalesBySellerRow,
 } from './reports.model';
 import { ReportsService } from './reports.service';
+import { UsersService } from '../users/users.service';
 
 @Component({
   selector: 'app-reports',
@@ -43,6 +44,7 @@ export class ReportsPage implements OnInit {
   private readonly catalog = inject(CatalogService);
   private readonly commercial = inject(CommercialService);
   private readonly paymentMethodsService = inject(PaymentMethodsService);
+  private readonly usersService = inject(UsersService);
 
   protected readonly activeReport = signal<ReportKind>('sales-by-product');
   protected readonly result = signal<PaginatedResponse<ReportRow> | null>(null);
@@ -244,6 +246,14 @@ export class ReportsPage implements OnInit {
     this.catalog.listCategories({ page: 1, limit: 100 }).pipe(take(1)).subscribe({ next: (result) => this.categories.set(result.data), error: () => undefined });
     this.catalog.listProducts({ page: 1, limit: 100 }).pipe(take(1)).subscribe({ next: (result) => this.products.set(result.data), error: () => undefined });
     this.commercial.listCustomers({ page: 1, limit: 100 }).pipe(take(1)).subscribe({ next: (result) => this.customers.set(result.data), error: () => undefined });
+    this.usersService.lookup().pipe(take(1)).subscribe({
+      next: users => {
+        const options = users.map(({ id, username, firstName, lastName }) => ({ id, username, firstName, lastName }));
+        this.sellers.set(options);
+        this.paymentCreators.set(options);
+      },
+      error: () => undefined,
+    });
   }
 
   private loadPaymentMethods(): void {

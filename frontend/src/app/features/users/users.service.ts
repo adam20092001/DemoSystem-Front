@@ -8,6 +8,7 @@ import {
   ResetPasswordResponse,
   UpdateUserRequest,
   User,
+  UserLookup,
 } from './user.model';
 
 @Injectable({ providedIn: 'root' })
@@ -46,5 +47,9 @@ export class UsersService {
       `users/${id}/reset-password`,
       {},
     );
+  }
+
+  lookup(): Observable<UserLookup[]> {
+    return this.api.get<UserLookup[]>('users/lookup');
   }
 }

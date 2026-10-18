@@ -61,7 +61,6 @@ export class AppShellComponent {
     { label: 'Cotizaciones', route: '/quotes', icon: 'file', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Ventas', route: '/sales', icon: 'receipt', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Pagos', route: '/payments', icon: 'wallet', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
-    { label: 'Caja', route: '/cash-sessions', icon: 'cash', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Contabilidad', route: '/accounting', icon: 'book', roles: ['ADMIN', 'MANAGEMENT'] },
     { label: 'Reportes', route: '/reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'SELLER'] },
     { label: 'Comprobantes', route: '/electronic-documents', icon: 'invoice', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
@@ -72,7 +71,7 @@ export class AppShellComponent {
   private readonly navSections: NavigationSection[] = [
     { label: 'Operación', items: this.nav.filter(item => ['/dashboard', '/pos', '/quotes', '/sales'].includes(item.route)) },
     { label: 'Catálogo', items: this.nav.filter(item => ['/products', '/inventory', '/customers'].includes(item.route)) },
-    { label: 'Finanzas', items: this.nav.filter(item => ['/payments', '/cash-sessions', '/accounting', '/reports', '/electronic-documents'].includes(item.route)) },
+    { label: 'Finanzas', items: this.nav.filter(item => ['/payments', '/accounting', '/reports', '/electronic-documents'].includes(item.route)) },
     { label: 'Administración', items: this.nav.filter(item => ['/users', '/settings'].includes(item.route)) },
   ];
 

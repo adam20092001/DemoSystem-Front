@@ -81,11 +81,15 @@ export interface QuoteListItem {
   expirationDate: string;
   subtotal: string;
   discountAmount: string;
+  taxableBase: string;
   taxAmount: string;
   currencyCode: string;
   taxEnabled: boolean;
   taxRate: string;
   total: string;
+  pricesIncludeTax: boolean;
+  itemsTotal: string;
+  customerDiscountAmount: string;
   itemCount: number;
   createdAt: string;
   updatedAt: string;
@@ -201,6 +205,10 @@ export interface SaleListItem {
   taxEnabled: boolean;
   taxRate: string;
   total: string;
+  pricesIncludeTax: boolean;
+  itemsTotal: string;
+  customerDiscountAmount: string;
+  taxableBase: string;
   paidAmount: string;
   balanceDue: string;
   itemCount: number;
@@ -253,6 +261,7 @@ export interface CreateSaleRequest {
   discountAmount?: string;
   items: QuoteLineRequest[];
   payment?: PaymentRequest;
+  payments?: PaymentRequest[];
 }
 
 export interface ListSalesQuery {
