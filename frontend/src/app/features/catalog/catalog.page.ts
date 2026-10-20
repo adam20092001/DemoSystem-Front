@@ -4,7 +4,8 @@ import { Observable, finalize, forkJoin, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApiRequestError } from '../../core/errors/api-request.error';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
-import { money as formatCurrency } from '../commercial/commercial.util';
+import { saveDownload } from '../../core/http/file-download';
+import { money as formatCurrency, quantity } from '../commercial/commercial.util';
 import {
   CatalogStatus,
   Category,
@@ -104,6 +105,7 @@ export class CatalogPage implements OnInit {
   protected readonly loadingUnits = signal(false);
   protected readonly loadingDetail = signal(false);
   protected readonly actionLoading = signal(false);
+  protected readonly exportingProducts = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly notice = signal<string | null>(null);
 
@@ -151,6 +153,25 @@ export class CatalogPage implements OnInit {
     this.productLowStock = false;
     this.loadProducts(1);
   }
+
+  protected exportProducts(): void {
+    this.exportingProducts.set(true);
+    this.error.set(null);
+    this.catalog.exportProducts({
+      ...(this.productSearch.trim() ? { search: this.productSearch.trim() } : {}),
+      ...(this.productBrand.trim() ? { brand: this.productBrand.trim() } : {}),
+      ...(this.productStatus ? { status: this.productStatus as CatalogStatus } : {}),
+      ...(this.productType ? { productType: this.productType as ProductType } : {}),
+      ...(this.productCategory ? { categoryId: this.productCategory } : {}),
+      ...(this.productUnit ? { unitId: this.productUnit } : {}),
+      ...(this.productLowStock ? { isInventoryTracked: true, lowStockOnly: true } : this.productInventory ? { isInventoryTracked: this.productInventory === 'true' } : {}),
+    }).pipe(take(1), finalize(() => this.exportingProducts.set(false))).subscribe({
+      next: blob => saveDownload(blob, `productos-${new Date().toISOString().slice(0, 10)}.xlsx`),
+      error: error => this.error.set(errorMessage(error)),
+    });
+  }
+
+  protected quantity(value: string | number, allowDecimal: boolean): string { return quantity(value, allowDecimal); }
 
   protected loadProducts(page = 1): void {
     this.loadingProducts.set(true);

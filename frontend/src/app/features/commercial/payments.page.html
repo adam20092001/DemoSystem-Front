@@ -1,4 +1,4 @@
-<header class="page-header"><h1>Pagos</h1></header>
+<header class="page-header"><h1>Pagos</h1>@if (activeTab() === 'receivables') { <button class="btn btn--ghost" type="button" (click)="exportReceivables()" [disabled]="exportingReceivables()">{{ exportingReceivables() ? 'Exportando…' : '↓ Excel' }}</button> }</header>
 @if (notice()) { <div class="notice notice--ok"><span>{{ notice() }}</span><button type="button" (click)="notice.set(null)">×</button></div> }
 @if (error() && !cancelPayment() && !receivablePayment()) { <div class="notice notice--error"><span>{{ error() }}</span><button type="button" (click)="error.set(null)">×</button></div> }
 

@@ -66,6 +66,10 @@ export class CatalogService {
     return this.api.get<PaginatedResponse<ProductListItem>>('products', toQueryParams(query));
   }
 
+  exportProducts(query: Omit<ListProductsQuery, 'page' | 'limit'>): Observable<Blob> {
+    return this.api.download('products/export.xlsx', toQueryParams(query));
+  }
+
   getProduct(id: string): Observable<ProductDetail> {
     return this.api.get<ProductDetail>(`products/${id}`);
   }

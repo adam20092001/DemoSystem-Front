@@ -57,6 +57,10 @@ export class CommercialService {
     return this.api.get<PaginatedResponse<QuoteListItem>>('quotes', queryParams(query));
   }
 
+  exportQuotes(query: Omit<ListQuotesQuery, 'page' | 'limit'>): Observable<Blob> {
+    return this.api.download('quotes/export.xlsx', queryParams(query));
+  }
+
   getQuote(id: string): Observable<QuoteDetail> {
     return this.api.get<QuoteDetail>(`quotes/${id}`);
   }
@@ -75,6 +79,10 @@ export class CommercialService {
 
   listSales(query: ListSalesQuery): Observable<PaginatedResponse<SaleListItem>> {
     return this.api.get<PaginatedResponse<SaleListItem>>('sales', queryParams(query));
+  }
+
+  exportSales(query: Omit<ListSalesQuery, 'page' | 'limit'>): Observable<Blob> {
+    return this.api.download('sales/export.xlsx', queryParams(query));
   }
 
   getSale(id: string): Observable<SaleDetail> {
@@ -117,6 +125,10 @@ export class CommercialService {
 
   listReceivables(query: ListReceivablesQuery): Observable<PaginatedResponse<ReceivableItem>> {
     return this.api.get<PaginatedResponse<ReceivableItem>>('accounts-receivable', queryParams(query));
+  }
+
+  exportReceivables(query: Omit<ListReceivablesQuery, 'page' | 'limit'>): Observable<Blob> {
+    return this.api.download('accounts-receivable/export.xlsx', queryParams(query));
   }
 
   openQuotePrint(id: string): void {

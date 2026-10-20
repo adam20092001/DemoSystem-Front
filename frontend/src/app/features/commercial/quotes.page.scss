@@ -1,0 +1,39 @@
+.header-actions { display: flex; gap: 8px; }
+.dialog--catalog { width: min(1180px, 100%); }
+.quote-builder { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(330px, .8fr); gap: 16px; }
+.quote-settings { grid-column: 1 / -1; }
+.quote-catalog, .quote-cart { min-width: 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.quote-search { position: relative; padding: 12px; border-bottom: 1px solid var(--line); }
+.quote-search > span { position: absolute; top: 50%; left: 25px; translate: 0 -50%; color: var(--muted); font-size: 20px; }
+.quote-search input { width: 100%; height: 42px; padding: 0 14px 0 40px; border: 1px solid var(--line-strong); border-radius: var(--r-md); outline: 0; }
+.quote-search input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+.quote-product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: 480px; overflow-y: auto; padding: 12px; }
+.quote-product-card { display: grid; min-width: 0; overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: inherit; text-align: left; transition: .15s ease; }
+.quote-product-card:hover { border-color: var(--brand); box-shadow: var(--shadow-sm); translate: 0 -1px; }
+.quote-product-card.selected { border-color: var(--brand); background: var(--brand-tint); }
+.quote-product-image { display: grid; place-items: center; height: 86px; overflow: hidden; background: var(--surface-2); color: var(--line-strong); font-size: 28px; }
+.quote-product-image img { width: 100%; height: 100%; object-fit: cover; }
+.quote-product-copy { display: grid; gap: 4px; min-height: 88px; padding: 9px; }
+.quote-product-copy small { color: var(--muted); font-size: 9px; }
+.quote-product-copy strong { display: -webkit-box; overflow: hidden; font-size: 12px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.quote-product-copy > span { margin-top: auto; color: var(--brand-ink); font-size: 13px; font-weight: 800; }
+.quote-product-stock { padding: 7px 9px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9.5px; }
+.quote-cart { align-self: start; overflow: hidden; }
+.quote-cart > h3 { display: flex; justify-content: space-between; padding: 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.quote-cart > h3 span { padding: 2px 7px; border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); }
+.quote-lines { display: grid; max-height: 390px; overflow-y: auto; }
+.quote-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; padding: 12px; border-bottom: 1px solid var(--line); }
+.quote-line > div:first-child { display: grid; gap: 2px; }
+.quote-line > div:first-child strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.quote-line small { color: var(--muted); font-size: 9.5px; }
+.quote-quantity { display: grid; grid-template-columns: 28px 48px 28px; width: fit-content; height: 32px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--r-sm); }
+.quote-quantity button { border: 0; background: var(--surface-2); }
+.quote-quantity input { min-width: 0; border: 0; border-inline: 1px solid var(--line); text-align: center; }
+.quote-discount { display: grid; grid-template-columns: 1fr 95px; gap: 6px; }
+.quote-discount .input { height: 32px; font-size: 10px; }
+.quote-line-total { display: flex; align-items: flex-end; justify-content: flex-end; gap: 6px; }
+.quote-line-total small { text-decoration: line-through; }
+.quote-empty { grid-column: 1 / -1; padding: 36px 18px; color: var(--muted); text-align: center; }
+.quote-cart .summary-box { width: auto; margin: 0; border-radius: 0; }
+@media (max-width: 980px) { .quote-builder { grid-template-columns: 1fr; } .quote-settings { grid-column: auto; } .quote-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 580px) { .header-actions { width: 100%; flex-wrap: wrap; } .header-actions .btn { flex: 1; } .quote-product-grid { grid-template-columns: 1fr; } .quote-product-card { grid-template-columns: 82px 1fr; } .quote-product-image { grid-row: 1 / 3; height: 100%; } .quote-product-stock { grid-column: 2; } }

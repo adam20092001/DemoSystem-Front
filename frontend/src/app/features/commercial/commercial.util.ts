@@ -19,6 +19,15 @@ export function money(value: string | number | null | undefined, currency = 'PEN
   }
 }
 
+export function quantity(value: string | number, allowDecimal = true): string {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return String(value);
+  return new Intl.NumberFormat('es-PE', {
+    minimumFractionDigits: allowDecimal ? 0 : 0,
+    maximumFractionDigits: allowDecimal ? 3 : 0,
+  }).format(amount);
+}
+
 export function shortDate(value: string): string {
   return new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' }).format(dateValue(value));
 }

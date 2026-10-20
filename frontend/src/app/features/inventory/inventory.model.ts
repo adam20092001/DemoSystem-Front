@@ -57,6 +57,7 @@ export interface LowStockItem {
   stockCurrent: string;
   stockMinimum: string;
   difference: string;
+  stockStatus: 'LOW_STOCK' | 'OUT_OF_STOCK';
   category: {
     id: string;
     name: string;

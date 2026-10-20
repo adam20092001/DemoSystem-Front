@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
+import { saveDownload } from '../../core/http/file-download';
 import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import { Payment, PaymentMethod, PaymentStatus, ReceivableItem } from './commercial.model';
@@ -37,6 +38,7 @@ export class PaymentsPage implements OnInit {
   protected readonly loadingPayments = signal(false);
   protected readonly loadingReceivables = signal(false);
   protected readonly actionLoading = signal(false);
+  protected readonly exportingReceivables = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly notice = signal<string | null>(null);
   protected readonly cancelPayment = signal<Payment | null>(null);
@@ -118,6 +120,18 @@ export class PaymentsPage implements OnInit {
   protected receivableRange(): string { return pageRange(this.receivables()); }
   protected activeVisiblePayments(): number { return this.payments()?.data.filter(payment => payment.status === 'ACTIVE').length ?? 0; }
   protected visibleReceivableBalance(): number { return this.receivables()?.data.reduce((sum, item) => sum + Number(item.balanceDue), 0) ?? 0; }
+
+  protected exportReceivables(): void {
+    this.exportingReceivables.set(true);
+    this.error.set(null);
+    this.commercial.exportReceivables({
+      ...(this.receivableFrom ? { confirmedFrom: this.receivableFrom } : {}),
+      ...(this.receivableTo ? { confirmedTo: this.receivableTo } : {}),
+    }).pipe(take(1), finalize(() => this.exportingReceivables.set(false))).subscribe({
+      next: blob => saveDownload(blob, `cuentas-por-cobrar-${new Date().toISOString().slice(0, 10)}.xlsx`),
+      error: error => this.error.set(requestErrorMessage(error)),
+    });
+  }
 
   protected loadPayments(page = 1): void {
     this.loadingPayments.set(true); this.error.set(null);

@@ -11,6 +11,7 @@ import { Customer, PaymentMethod, PaymentRequest, SaleDetail } from './commercia
 import { CommercialService } from './commercial.service';
 import {
   money,
+  quantity,
   requestErrorMessage,
   requiresPaymentReference,
   validAmount,
@@ -125,6 +126,7 @@ export class PosPage implements OnInit {
   }
   protected taxableBase(): number { return roundMoney(this.total() - this.taxAmount()); }
   protected formatMoney(value: string | number): string { return money(value, this.settings()?.currencyCode ?? 'PEN'); }
+  protected formatQuantity(value: string | number, allowDecimal: boolean): string { return quantity(value, allowDecimal); }
   protected selectedMethodRequiresReference(line: PosPaymentLine): boolean {
     return requiresPaymentReference(this.paymentMethods(), line.method);
   }

@@ -106,6 +106,9 @@ export interface QuoteItem {
   quantity: string;
   unitPrice: string;
   lineTotal: string;
+  discountType: 'FIXED' | 'PERCENT' | null;
+  discountValue: string | null;
+  discountAmount: string;
   stockInfo: {
     currentStock: string;
     requestedQuantity: string;
@@ -126,6 +129,8 @@ export interface QuoteDetail extends QuoteListItem {
 export interface QuoteLineRequest {
   productId: string;
   quantity: string;
+  discountType?: 'FIXED' | 'PERCENT';
+  discountValue?: string;
 }
 
 export interface CreateQuoteRequest {
@@ -228,6 +233,9 @@ export interface SaleItem {
   quantity: string;
   unitPrice: string;
   lineTotal: string;
+  discountType: 'FIXED' | 'PERCENT' | null;
+  discountValue: string | null;
+  discountAmount: string;
 }
 
 export interface SaleInventoryMovement {

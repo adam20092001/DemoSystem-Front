@@ -6,6 +6,7 @@
       {{ activeTab() === 'products' ? 'Nuevo producto' : activeTab() === 'categories' ? 'Nueva categoría' : 'Nueva unidad' }}
     </button>
   }
+  @if (activeTab() === 'products') { <button class="btn btn--ghost" type="button" (click)="exportProducts()" [disabled]="exportingProducts()">{{ exportingProducts() ? 'Exportando…' : '↓ Excel' }}</button> }
 </header>
 
 <nav class="catalog-tabs" aria-label="Secciones del catálogo">
@@ -142,8 +143,8 @@
                 <td class="price mono">{{ money(product.salePrice) }}</td>
                 <td>
                   @if (product.isInventoryTracked) {
-                    <strong class="cell-title mono">{{ product.stockCurrent }} {{ product.unit.abbreviation }}</strong>
-                    <small class="cell-note">Mínimo {{ product.stockMinimum }}</small>
+                    <strong class="cell-title mono">{{ quantity(product.stockCurrent, product.unit.allowDecimal) }} {{ product.unit.abbreviation }}</strong>
+                    <small class="cell-note">Mínimo {{ quantity(product.stockMinimum, product.unit.allowDecimal) }}</small>
                   } @else {
                     <span class="muted">No controla</span>
                   }
@@ -361,7 +362,7 @@
         <div><span>Precio</span><strong class="mono">{{ money(product.salePrice) }}</strong></div>
         <div><span>Estado</span><strong><span class="badge" [class]="statusClass(product.status)">{{ statusLabel(product.status) }}</span></strong></div>
         <div><span>Unidad</span><strong>{{ product.unit.name }} ({{ product.unit.abbreviation }})</strong></div>
-        <div><span>Stock</span><strong class="mono">{{ product.isInventoryTracked ? product.stockCurrent + ' / mín. ' + product.stockMinimum : 'No controla' }}</strong></div>
+        <div><span>Stock</span><strong class="mono">{{ product.isInventoryTracked ? quantity(product.stockCurrent, product.unit.allowDecimal) + ' / mín. ' + quantity(product.stockMinimum, product.unit.allowDecimal) : 'No controla' }}</strong></div>
       </div>
       @if (product.commercialDescription || product.internalNotes) {
         <section class="detail-section copy-grid">

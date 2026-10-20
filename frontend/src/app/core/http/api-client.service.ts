@@ -15,6 +15,10 @@ export class ApiClient {
     return this.http.get<T>(this.url(path), { params: this.params(query) });
   }
 
+  download(path: string, query?: QueryParams): Observable<Blob> {
+    return this.http.get(this.url(path), { params: this.params(query), responseType: 'blob' });
+  }
+
   post<TResponse, TBody = unknown>(path: string, body: TBody): Observable<TResponse> {
     return this.http.post<TResponse>(this.url(path), body);
   }

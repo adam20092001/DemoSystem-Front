@@ -21,6 +21,7 @@ import {
   RegisterInventoryMovementRequest,
 } from './inventory.model';
 import { InventoryService } from './inventory.service';
+import { quantity } from '../commercial/commercial.util';
 
 type InventoryTab = 'movements' | 'low-stock';
 
@@ -269,7 +270,8 @@ export class InventoryPage implements OnInit {
       finalize(() => this.actionLoading.set(false)),
     ).subscribe({
       next: movement => {
-        this.notice.set(`${operationSuccessLabel(this.movementForm.operation)}. Stock actual: ${movement.newStock}.`);
+        const product = this.productOptions().find(item => item.id === movement.product.id);
+        this.notice.set(`${operationSuccessLabel(this.movementForm.operation)}. Stock actual: ${quantity(movement.newStock, product?.unit.allowDecimal ?? true)}.`);
         this.movementFormOpen.set(false);
         this.selectedStock.set(null);
         this.stockProductId = movement.product.id;
@@ -323,7 +325,12 @@ export class InventoryPage implements OnInit {
   }
 
   protected stockLevel(item: LowStockItem): 'zero' | 'low' {
-    return Number(item.stockCurrent) === 0 ? 'zero' : 'low';
+    return item.stockStatus === 'OUT_OF_STOCK' ? 'zero' : 'low';
+  }
+
+  protected quantity(value: string | number, productId?: string, allowDecimal?: boolean): string {
+    const decimals = allowDecimal ?? this.productOptions().find(product => product.id === productId)?.unit.allowDecimal ?? true;
+    return quantity(value, decimals);
   }
 
   private loadProductStock(productId: string): void {

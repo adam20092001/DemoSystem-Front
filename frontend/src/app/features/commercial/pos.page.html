@@ -61,7 +61,7 @@
               <span class="product-meta">
                 @if (product.isInventoryTracked) {
                   <strong class="stock-badge" [class.stock-badge--out]="stockState(product) === 'out'" [class.stock-badge--low]="stockState(product) === 'low'">
-                    {{ stockState(product) === 'out' ? 'Sin stock' : ('Stock: ' + product.stockCurrent + ' ' + product.unit.abbreviation) }}
+                    {{ stockState(product) === 'out' ? 'Sin stock' : ('Stock: ' + formatQuantity(product.stockCurrent, product.unit.allowDecimal) + ' ' + product.unit.abbreviation) }}
                   </strong>
                 } @else {
                   <small>Servicio</small>
@@ -109,7 +109,7 @@
                     <small class="mono">{{ product.sku }}</small>
                     <strong>{{ product.name }}</strong>
                     <span>{{ formatMoney(product.salePrice) }} / {{ product.unit.abbreviation }}</span>
-                    @if (product.isInventoryTracked) { <strong class="cart-stock" [class.cart-stock--low]="stockState(product) === 'low'">Disponible: {{ product.stockCurrent }} {{ product.unit.abbreviation }}</strong> }
+                    @if (product.isInventoryTracked) { <strong class="cart-stock" [class.cart-stock--low]="stockState(product) === 'low'">Disponible: {{ formatQuantity(product.stockCurrent, product.unit.allowDecimal) }} {{ product.unit.abbreviation }}</strong> }
                   </div>
                   <strong class="cart-line-total">{{ formatMoney(lineTotal(line)) }}</strong>
                   <div class="quantity-control" aria-label="Cantidad">

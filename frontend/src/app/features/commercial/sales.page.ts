@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
+import { saveDownload } from '../../core/http/file-download';
 import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import {
@@ -19,6 +20,7 @@ import { ElectronicDocumentsService } from '../electronic-documents/electronic-d
 import {
   dateTime,
   money,
+  quantity,
   pageRange,
   requestErrorMessage,
   requiresPaymentReference,
@@ -45,6 +47,7 @@ export class SalesPage implements OnInit {
   protected readonly detail = signal<SaleDetail | null>(null);
   protected readonly loading = signal(false);
   protected readonly actionLoading = signal(false);
+  protected readonly exporting = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly notice = signal<string | null>(null);
   protected readonly pendingAction = signal<{ action: SaleAction; sale: SaleListItem | SaleDetail } | null>(null);
@@ -182,6 +185,7 @@ export class SalesPage implements OnInit {
   }
 
   protected formatMoney(value: string | number, currency = 'PEN'): string { return money(value, currency); }
+  protected formatQuantity(value: string | number): string { return quantity(value, Number(value) % 1 !== 0); }
   protected formatDate(value: string): string { return dateTime(value); }
   protected range(): string { return pageRange(this.result()); }
   protected selectedMethodRequiresReference(): boolean { return requiresPaymentReference(this.paymentMethods(), this.paymentMethod); }
@@ -195,6 +199,22 @@ export class SalesPage implements OnInit {
   protected visibleBalanceCount(): number { return this.result()?.data.filter(sale => this.hasBalance(sale)).length ?? 0; }
   protected visibleDeliveryCount(status: SaleDeliveryStatus): number { return this.result()?.data.filter(sale => sale.deliveryStatus === status).length ?? 0; }
   protected hasBalance(sale: SaleListItem | SaleDetail): boolean { return Number(sale.balanceDue) > 0; }
+
+  protected exportExcel(): void {
+    this.exporting.set(true);
+    this.error.set(null);
+    this.commercial.exportSales({
+      ...(this.search.trim() ? { search: this.search.trim() } : {}),
+      ...(this.status ? { status: this.status as SaleStatus } : {}),
+      ...(this.paymentStatus ? { paymentStatus: this.paymentStatus as SalePaymentStatus } : {}),
+      ...(this.deliveryStatus ? { deliveryStatus: this.deliveryStatus as SaleDeliveryStatus } : {}),
+      ...(this.confirmedFrom ? { confirmedFrom: this.confirmedFrom } : {}),
+      ...(this.confirmedTo ? { confirmedTo: this.confirmedTo } : {}),
+    }).pipe(take(1), finalize(() => this.exporting.set(false))).subscribe({
+      next: blob => saveDownload(blob, `ventas-${new Date().toISOString().slice(0, 10)}.xlsx`),
+      error: error => this.error.set(requestErrorMessage(error)),
+    });
+  }
 
   private loadFiscalSeries(): void {
     this.actionLoading.set(true);

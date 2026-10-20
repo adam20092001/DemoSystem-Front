@@ -37,8 +37,8 @@
   </article>
   <article class="metric metric--stock">
     <p>Stock consultado</p>
-    <strong>{{ selectedStock()?.stockCurrent ?? '—' }}</strong>
-    <small>{{ selectedStock() ? selectedStock()!.unitAbbreviation + ' · mínimo ' + selectedStock()!.stockMinimum : 'Selecciona un producto abajo' }}</small>
+    <strong>{{ selectedStock() ? quantity(selectedStock()!.stockCurrent, selectedStock()!.productId, selectedStock()!.allowDecimal) : '—' }}</strong>
+    <small>{{ selectedStock() ? selectedStock()!.unitAbbreviation + ' · mínimo ' + quantity(selectedStock()!.stockMinimum, selectedStock()!.productId, selectedStock()!.allowDecimal) : 'Selecciona un producto abajo' }}</small>
   </article>
 </section>
 
@@ -61,11 +61,11 @@
     } @else if (selectedStock(); as stock) {
       <div>
         <span>Disponible</span>
-        <strong>{{ stock.stockCurrent }} {{ stock.unitAbbreviation }}</strong>
+        <strong>{{ quantity(stock.stockCurrent, stock.productId, stock.allowDecimal) }} {{ stock.unitAbbreviation }}</strong>
       </div>
       <div>
         <span>Mínimo</span>
-        <strong>{{ stock.stockMinimum }} {{ stock.unitAbbreviation }}</strong>
+        <strong>{{ quantity(stock.stockMinimum, stock.productId, stock.allowDecimal) }} {{ stock.unitAbbreviation }}</strong>
       </div>
     } @else {
       <span class="stock-placeholder">Sin producto seleccionado</span>
@@ -163,10 +163,10 @@
                   <strong class="quantity"
                     [class.quantity--in]="movementSign(movement.movementType) === '+'"
                     [class.quantity--out]="movementSign(movement.movementType) !== '+'">
-                    {{ movementSign(movement.movementType) }}{{ movement.quantity }}
+                    {{ movementSign(movement.movementType) }}{{ quantity(movement.quantity, movement.product.id) }}
                   </strong>
                 </td>
-                <td><span class="stock-flow mono">{{ movement.previousStock }} → {{ movement.newStock }}</span></td>
+                <td><span class="stock-flow mono">{{ quantity(movement.previousStock, movement.product.id) }} → {{ quantity(movement.newStock, movement.product.id) }}</span></td>
                 <td>
                   <strong class="cell-title reason">{{ movement.reason }}</strong>
                   @if (movement.notes) { <span class="cell-note reason">{{ movement.notes }}</span> }
@@ -260,9 +260,9 @@
                   <span class="cell-note mono">{{ item.sku }}</span>
                 </td>
                 <td>{{ item.category.name }}</td>
-                <td><strong class="stock-number">{{ item.stockCurrent }} {{ item.unit.abbreviation }}</strong></td>
-                <td><span class="mono">{{ item.stockMinimum }} {{ item.unit.abbreviation }}</span></td>
-                <td><strong class="danger-text">{{ item.difference }} {{ item.unit.abbreviation }}</strong></td>
+                <td><strong class="stock-number">{{ quantity(item.stockCurrent, item.id) }} {{ item.unit.abbreviation }}</strong></td>
+                <td><span class="mono">{{ quantity(item.stockMinimum, item.id) }} {{ item.unit.abbreviation }}</span></td>
+                <td><strong class="danger-text">{{ quantity(item.difference, item.id) }} {{ item.unit.abbreviation }}</strong></td>
                 <td>
                   <span class="badge" [class.badge--danger]="stockLevel(item) === 'zero'" [class.badge--warn]="stockLevel(item) === 'low'">
                     {{ stockLevel(item) === 'zero' ? 'Sin stock' : 'Bajo mínimo' }}
@@ -270,8 +270,8 @@
                 </td>
                 @if (canWrite()) {
                   <td class="row-action">
-                    <button class="action-button" type="button" (click)="openMovementForm(item.stockCurrent === '0.000' ? 'INITIAL_BALANCE' : 'ENTRY', item.id)">
-                      {{ item.stockCurrent === '0.000' ? 'Cargar saldo' : 'Registrar entrada' }}
+                    <button class="action-button" type="button" (click)="openMovementForm(+item.stockCurrent === 0 ? 'INITIAL_BALANCE' : 'ENTRY', item.id)">
+                      {{ +item.stockCurrent === 0 ? 'Cargar saldo' : 'Registrar entrada' }}
                     </button>
                   </td>
                 }
@@ -337,8 +337,8 @@
         } @else if (selectedStock(); as stock) {
           <div class="current-stock">
             <span>Stock actual</span>
-            <strong>{{ stock.stockCurrent }} {{ stock.unitAbbreviation }}</strong>
-            <small>Mínimo: {{ stock.stockMinimum }} · {{ stock.allowDecimal ? 'Admite decimales' : 'Solo enteros' }}</small>
+            <strong>{{ quantity(stock.stockCurrent, stock.productId, stock.allowDecimal) }} {{ stock.unitAbbreviation }}</strong>
+            <small>Mínimo: {{ quantity(stock.stockMinimum, stock.productId, stock.allowDecimal) }} · {{ stock.allowDecimal ? 'Admite decimales' : 'Solo enteros' }}</small>
           </div>
         }
 
