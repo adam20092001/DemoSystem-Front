@@ -176,6 +176,6 @@ function clearStoredRoles(): void {
 }
 
 function uniqueRoles(values: unknown[]): UserRole[] {
-  const valid: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'];
+  const valid: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT', 'ACCOUNTANT'];
   return [...new Set(values.filter((value): value is UserRole => valid.includes(value as UserRole)))];
 }

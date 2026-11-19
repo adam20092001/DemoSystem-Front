@@ -1,0 +1,27 @@
+:host { display: block; }
+.document-number { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 750; }
+.block { display: block; margin-top: 3px; }
+.uppercase { text-transform: uppercase; }
+.compact-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.lines-editor { display: grid; gap: 10px; }
+.shipment-line { display: grid; grid-template-columns: repeat(6, minmax(90px, 1fr)) 36px; gap: 9px; align-items: end; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.shipment-line .span-2 { grid-column: span 2; }
+.record-card { margin-top: 10px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); }
+.record-card__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface-2); }
+.record-card__head div { display: grid; gap: 3px; }
+.record-card__head small { color: var(--muted); }
+.record-card__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.compact-table { min-width: 760px; }
+.operation-actions { margin-bottom: 20px; }
+.empty-state { padding: 20px; color: var(--muted); text-align: center; background: var(--surface-2); border-radius: var(--r-md); }
+.allocation-list { display: grid; gap: 8px; margin-top: 10px; }
+.allocation { display: grid; grid-template-columns: minmax(0, 1fr) 150px 130px; align-items: end; gap: 12px; padding: 10px 12px; background: var(--surface-2); border-radius: var(--r-md); }
+.allocation .checkbox span { display: grid; gap: 2px; }
+.allocation small { color: var(--muted); }
+.history-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.history-row:last-child { border-bottom: 0; }
+.action-field { display: flex; align-items: end; }
+.action-field .btn { width: 100%; }
+.financial-highlight { font-weight: 750; }
+@media (max-width: 1050px) { .compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .shipment-line { grid-template-columns: repeat(2, minmax(0, 1fr)); } .shipment-line .span-2 { grid-column: auto; } }
+@media (max-width: 680px) { .compact-grid, .shipment-line, .allocation { grid-template-columns: 1fr; } .record-card__head { align-items: flex-start; } .history-row { align-items: flex-start; } }

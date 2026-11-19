@@ -6,6 +6,7 @@ import {
   CreateUserRequest,
   ListUsersQuery,
   ResetPasswordResponse,
+  RoleOption,
   UpdateUserRequest,
   User,
   UserLookup,
@@ -24,6 +25,10 @@ export class UsersService {
       roleName: query.roleName,
     };
     return this.api.get<PaginatedResponse<User>>('users', params);
+  }
+
+  listRoles(): Observable<RoleOption[]> {
+    return this.api.get<RoleOption[]>('roles');
   }
 
   create(request: CreateUserRequest): Observable<User> {

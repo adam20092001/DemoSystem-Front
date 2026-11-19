@@ -37,7 +37,7 @@
       <span>Rol</span>
       <select class="input" name="role" [(ngModel)]="selectedRole">
         <option value="">Todos los roles</option>
-        @for (role of roles; track role) {
+        @for (role of roles(); track role) {
           <option [value]="role">{{ roleLabel(role) }}</option>
         }
       </select>
@@ -220,7 +220,7 @@
         <fieldset class="roles-field" [disabled]="actionLoading()">
           <legend>Roles</legend>
           <div class="role-options">
-            @for (role of roles; track role) {
+            @for (role of roles(); track role) {
               <label><input type="checkbox" [name]="'role-' + role" [checked]="hasRole(role)" (change)="toggleRole(role, $any($event.target).checked)"> {{ roleLabel(role) }}</label>
             }
           </div>

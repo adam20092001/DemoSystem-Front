@@ -44,6 +44,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   SELLER: 'Vendedor',
   WAREHOUSE: 'Almacén',
   MANAGEMENT: 'Gerencia',
+  ACCOUNTANT: 'Contador',
 };
 
 const STATUS_LABELS: Record<UserStatus, string> = {
@@ -63,7 +64,7 @@ export class UsersPage implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly usersService = inject(UsersService);
 
-  protected readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'];
+  protected readonly roles = signal<UserRole[]>([]);
   protected readonly statuses: UserStatus[] = ['ACTIVE', 'INACTIVE', 'BLOCKED'];
   protected readonly pageSizes = [10, 20, 50];
 
@@ -98,6 +99,7 @@ export class UsersPage implements OnInit {
   });
 
   ngOnInit(): void {
+    this.loadRoles();
     this.loadUsers();
   }
 
@@ -276,7 +278,7 @@ export class UsersPage implements OnInit {
   }
 
   protected roleLabel(role: UserRole): string {
-    return ROLE_LABELS[role];
+    return ROLE_LABELS[role] ?? role;
   }
 
   protected toggleRole(role: UserRole, checked: boolean): void {
@@ -315,6 +317,13 @@ export class UsersPage implements OnInit {
     return `Se invalidará la contraseña actual de ${action.user.username} y se generará una temporal.`;
   }
 
+  private loadRoles(): void {
+    this.usersService.listRoles().pipe(take(1)).subscribe({
+      next: options => this.roles.set(options.map(option => option.name)),
+      error: (error: unknown) => this.error.set(errorMessage(error)),
+    });
+  }
+
   private loadUsers(page = 1): void {
     this.loading.set(true);
     this.error.set(null);
@@ -341,7 +350,7 @@ function emptyForm(): UserForm {
     username: '',
     email: '',
     temporaryPassword: '',
-    roleNames: ['SELLER'],
+    roleNames: [],
   };
 }
 

@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavigationItem, UserRole } from '../../core/models/navigation.model';
+import { SireDemoService } from '../../features/sire-demo/sire-demo.service';
 
 interface NavigationSection {
   label: string;
@@ -27,6 +28,9 @@ const ICONS: Record<string, string> = {
   chart: '<path d="M4 20V4M4 20h16M8 20v-6M12 20v-9M16 20v-4"/>',
   invoice: '<path d="M6 3h12v18l-2-1.4L14 21l-2-1.4L10 21l-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 6.6 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.4H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 6.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 .9 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+  truck: '<path d="M3 6h11v11H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>',
+  clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M9 10h6M9 14h6"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -34,6 +38,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   SELLER: 'Vendedor',
   WAREHOUSE: 'Almacén',
   MANAGEMENT: 'Gerencia',
+  ACCOUNTANT: 'Contador',
 };
 
 @Component({
@@ -43,25 +48,38 @@ const ROLE_LABELS: Record<UserRole, string> = {
   styleUrl: './app-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppShellComponent {
+export class AppShellComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly sire = inject(SireDemoService);
   protected readonly menuOpen = signal(false);
   protected readonly switchingRole = signal(false);
   protected readonly roleError = signal<string | null>(null);
-  private readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'];
+  protected readonly sireAvailable = signal(false);
+  private readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT', 'ACCOUNTANT'];
 
   protected readonly nav: NavigationItem[] = [
-    { label: 'Resumen', route: '/dashboard', icon: 'grid', roles: this.roles },
+    { label: 'Resumen', route: '/dashboard', icon: 'grid', roles: ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'] },
     { label: 'Punto de venta', route: '/pos', icon: 'cart', roles: ['ADMIN', 'SELLER'] },
-    { label: 'Productos', route: '/products', icon: 'box', roles: this.roles },
+    { label: 'Productos', route: '/products', icon: 'box', roles: ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'] },
     { label: 'Inventario', route: '/inventory', icon: 'layers', roles: ['ADMIN', 'WAREHOUSE', 'MANAGEMENT'] },
+    { label: 'Valorización', route: '/inventory-valuation', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
     { label: 'Clientes', route: '/customers', icon: 'users', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Cotizaciones', route: '/quotes', icon: 'file', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Ventas', route: '/sales', icon: 'receipt', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Pagos', route: '/payments', icon: 'wallet', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
-    { label: 'Contabilidad', route: '/accounting', icon: 'book', roles: ['ADMIN', 'MANAGEMENT'] },
+    { label: 'Proveedores', route: '/suppliers', icon: 'truck', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Compras', route: '/purchases', icon: 'clipboard', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Cuentas por pagar', route: '/accounts-payable', icon: 'wallet', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Importaciones', route: '/imports', icon: 'truck', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Control de importaciones', route: '/import-reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'SIRE Demo', route: '/sire-demo', icon: 'file', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'], feature: 'sire-demo' },
+    { label: 'Contabilidad', route: '/accounting', icon: 'book', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Plan de cuentas', route: '/chart-of-accounts', icon: 'layers', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Periodos contables', route: '/accounting-periods', icon: 'calendar', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Asientos manuales', route: '/manual-journals', icon: 'file', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Libros contables', route: '/accounting-reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
     { label: 'Reportes', route: '/reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'SELLER'] },
     { label: 'Comprobantes', route: '/electronic-documents', icon: 'invoice', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Usuarios', route: '/users', icon: 'users', roles: ['ADMIN'] },
@@ -70,16 +88,27 @@ export class AppShellComponent {
 
   private readonly navSections: NavigationSection[] = [
     { label: 'Operación', items: this.nav.filter(item => ['/dashboard', '/pos', '/quotes', '/sales'].includes(item.route)) },
-    { label: 'Catálogo', items: this.nav.filter(item => ['/products', '/inventory', '/customers'].includes(item.route)) },
-    { label: 'Finanzas', items: this.nav.filter(item => ['/payments', '/accounting', '/reports', '/electronic-documents'].includes(item.route)) },
+    { label: 'Catálogo', items: this.nav.filter(item => ['/products', '/inventory', '/inventory-valuation', '/customers'].includes(item.route)) },
+    { label: 'Compras', items: this.nav.filter(item => ['/suppliers', '/purchases', '/accounts-payable', '/imports', '/import-reports'].includes(item.route)) },
+    { label: 'Finanzas', items: this.nav.filter(item => ['/payments', '/accounting', '/chart-of-accounts', '/accounting-periods', '/manual-journals', '/accounting-reports', '/reports', '/electronic-documents', '/sire-demo'].includes(item.route)) },
     { label: 'Administración', items: this.nav.filter(item => ['/users', '/settings'].includes(item.route)) },
   ];
 
   protected readonly visibleNavSections = computed(() =>
     this.navSections
-      .map(section => ({ ...section, items: section.items.filter(item => item.roles.includes(this.auth.role())) }))
+      .map(section => ({ ...section, items: section.items.filter(item => item.roles.includes(this.auth.role()) && (item.feature !== 'sire-demo' || this.sireAvailable())) }))
       .filter(section => section.items.length > 0),
   );
+
+  ngOnInit(): void {
+    this.refreshSireAvailability();
+  }
+
+  private refreshSireAvailability(): void {
+    this.sireAvailable.set(false);
+    if (!['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'].includes(this.auth.role())) return;
+    this.sire.context().pipe(take(1)).subscribe({ next: () => this.sireAvailable.set(true), error: () => this.sireAvailable.set(false) });
+  }
 
   protected readonly todayLabel = new Intl.DateTimeFormat('es-PE', {
     weekday: 'long',
@@ -111,7 +140,7 @@ export class AppShellComponent {
     this.switchingRole.set(true);
     this.roleError.set(null);
     this.auth.switchRole(role).pipe(take(1), finalize(() => this.switchingRole.set(false))).subscribe({
-      next: () => this.router.navigateByUrl('/dashboard'),
+      next: session => { this.refreshSireAvailability(); this.router.navigateByUrl(session.role === 'ACCOUNTANT' ? '/accounting' : '/dashboard'); },
       error: () => this.roleError.set('No se pudo cambiar el rol activo.'),
     });
   }

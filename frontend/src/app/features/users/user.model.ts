@@ -2,6 +2,10 @@ import { UserRole } from '../../core/models/navigation.model';
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
 
+export interface RoleOption {
+  name: UserRole;
+}
+
 export interface User {
   id: string;
   firstName: string;

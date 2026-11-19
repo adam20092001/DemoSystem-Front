@@ -1,0 +1,28 @@
+<header class="page-header"><div><p class="eyebrow">Inventario</p><h1>Valorización</h1></div></header>
+@if (error()) { <div class="notice notice--error">{{ error() }}<button type="button" (click)="error.set(null)">×</button></div> }
+
+<nav class="tabs" aria-label="Valorización de inventario">
+  <button class="tab" type="button" [class.tab--active]="tab() === 'valued'" (click)="selectTab('valued')">Existencias valorizadas</button>
+  <button class="tab" type="button" [class.tab--active]="tab() === 'pending'" (click)="selectTab('pending')">Pendientes <span class="tab-count">{{ pending()?.total ?? 0 }}</span></button>
+</nav>
+
+<section class="panel">
+  <form class="filters" (submit)="apply($event)">
+    @if (auth.role() !== 'ACCOUNTANT') { <label class="field filter--wide"><span>Producto</span><select class="input" name="valuationProductId" [(ngModel)]="productId"><option value="">Todos</option>@for (product of products(); track product.id) { <option [value]="product.id">{{ product.sku }} · {{ product.name }}</option> }</select></label> }
+    <label class="field"><span>Filas</span><select class="input" name="valuationLimit" [(ngModel)]="pageSize" (ngModelChange)="load(1)"><option [ngValue]="20">20</option><option [ngValue]="50">50</option><option [ngValue]="100">100</option></select></label>
+    <div class="filter-actions"><button class="btn btn--primary">Aplicar</button><button class="btn btn--ghost" type="button" (click)="clear()">Limpiar</button></div>
+  </form>
+
+  @if (tab() === 'valued') {
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Producto</th><th>Método</th><th class="number">Stock físico</th><th class="number">Cantidad valorizada</th><th class="number">Costo promedio</th><th class="number">Valor total</th><th>Control</th></tr></thead><tbody>
+      @for (item of valued()?.data ?? []; track item.productId) { <tr><td><div class="primary-cell"><strong>{{ item.name }}</strong><small class="mono">{{ item.sku }}</small></div></td><td>{{ methodLabel(item.method) }}</td><td class="number">{{ decimal(item.physicalStockCurrent) }}</td><td class="number">{{ decimal(item.valuedQuantity) }}</td><td class="number">{{ currency(item.weightedAverageUnitCost, 6) }}</td><td class="number value-total">{{ currency(item.totalValue) }}</td><td><span class="badge" [class.badge--ok]="item.physicalStockCurrent === item.valuedQuantity" [class.badge--warn]="item.physicalStockCurrent !== item.valuedQuantity">{{ item.physicalStockCurrent === item.valuedQuantity ? 'Cuadra' : 'Revisar' }}</span></td></tr> }
+      @empty { <tr><td colspan="7" class="empty">{{ loading() ? 'Calculando valorización…' : 'No hay productos con valorización habilitada.' }}</td></tr> }
+    </tbody></table></div>
+  } @else {
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha</th><th>Producto</th><th class="number">Cantidad</th><th>Recepción</th></tr></thead><tbody>
+      @for (item of pending()?.data ?? []; track item.inventoryMovementId) { <tr><td>{{ date(item.createdAt) }}</td><td><div class="primary-cell"><strong>{{ item.name }}</strong><small class="mono">{{ item.sku }}</small></div></td><td class="number">{{ decimal(item.quantity) }}</td><td class="mono">{{ item.purchaseReceiptId ?? '—' }}</td></tr> }
+      @empty { <tr><td colspan="4" class="empty">{{ loading() ? 'Buscando pendientes…' : 'No hay recepciones pendientes de valorizar.' }}</td></tr> }
+    </tbody></table></div>
+  }
+  <footer class="pagination"><span>{{ current()?.total ?? 0 }} registros</span><div class="pagination__actions"><button class="btn btn--ghost" type="button" (click)="previous()" [disabled]="(current()?.page ?? 1) <= 1">Anterior</button><span>Página {{ current()?.page ?? 1 }} de {{ current()?.totalPages ?? 1 }}</span><button class="btn btn--ghost" type="button" (click)="next()" [disabled]="(current()?.page ?? 1) >= (current()?.totalPages ?? 1)">Siguiente</button></div></footer>
+</section>

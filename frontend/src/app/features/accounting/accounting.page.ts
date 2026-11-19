@@ -49,7 +49,7 @@ export class AccountingPage implements OnInit {
   protected readonly loadingDetail = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly sourceTypes: AccountingSourceType[] = ['SALE', 'PAYMENT'];
+  protected readonly sourceTypes: AccountingSourceType[] = ['SALE', 'PAYMENT', 'MANUAL', 'PURCHASE', 'PURCHASE_RECEIPT', 'SUPPLIER_PAYMENT', 'COGS'];
   protected readonly eventTypes: AccountingEventType[] = [
     'ORIGINAL',
     'REVERSAL',
@@ -112,7 +112,7 @@ export class AccountingPage implements OnInit {
   }
 
   protected sourceLabel(value: AccountingSourceType): string {
-    return value === 'SALE' ? 'Venta' : 'Pago';
+    return ({ SALE: 'Venta', PAYMENT: 'Pago de cliente', MANUAL: 'Asiento manual', PURCHASE: 'Compra', PURCHASE_RECEIPT: 'Recepción de compra', SUPPLIER_PAYMENT: 'Pago a proveedor', COGS: 'Costo de ventas' })[value];
   }
 
   protected eventLabel(value: AccountingEventType): string {
@@ -125,6 +125,9 @@ export class AccountingPage implements OnInit {
       LIABILITY: 'Pasivo',
       REVENUE: 'Ingreso',
       CONTRA_REVENUE: 'Descuento sobre ventas',
+      EQUITY: 'Patrimonio',
+      EXPENSE: 'Gasto',
+      COST: 'Costo',
     }[value];
   }
 

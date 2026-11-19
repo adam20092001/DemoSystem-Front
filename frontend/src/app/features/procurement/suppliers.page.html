@@ -1,0 +1,33 @@
+<header class="page-header"><div><p class="eyebrow">Compras</p><h1>Proveedores</h1></div>@if (canWrite()) { <button class="btn btn--primary" type="button" (click)="openCreate()">Nuevo proveedor</button> }</header>
+@if (notice()) { <div class="notice notice--ok">{{ notice() }}<button (click)="notice.set(null)">×</button></div> }
+@if (error()) { <div class="notice notice--error">{{ error() }}<button (click)="error.set(null)">×</button></div> }
+<section class="panel">
+  <form class="filters" (submit)="apply($event)">
+    <label class="field filter--wide"><span>Buscar</span><input class="input" name="supplierSearch" [(ngModel)]="search" placeholder="Razón social o documento"></label>
+    <label class="field"><span>Estado</span><select class="input" name="supplierStatus" [(ngModel)]="status"><option value="">Todos</option><option value="ACTIVE">Activo</option><option value="INACTIVE">Inactivo</option></select></label>
+    <label class="field"><span>Documento</span><select class="input" name="supplierDocument" [(ngModel)]="documentType"><option value="">Todos</option><option value="RUC">RUC</option><option value="DNI">DNI</option><option value="FOREIGN_TAX_ID">ID extranjero</option><option value="OTHER">Otro</option></select></label>
+    <div class="filter-actions"><button class="btn btn--primary">Aplicar</button><button class="btn btn--ghost" type="button" (click)="clear()">Limpiar</button></div>
+  </form>
+  <div class="table-wrap"><table class="data-table"><thead><tr><th>Proveedor</th><th>Documento</th><th>País</th><th>Contacto</th><th>Moneda</th><th>Estado</th><th></th></tr></thead><tbody>
+    @for (item of result()?.data ?? []; track item.id) { <tr>
+      <td><span class="primary-cell"><strong>{{ item.legalName }}</strong><small>{{ item.tradeName || '—' }}</small></span></td>
+      <td><span class="primary-cell"><strong>{{ documentLabel(item.documentType) }}</strong><small class="mono">{{ item.documentNumber }}</small></span></td>
+      <td>{{ item.countryCode }}</td><td><span class="primary-cell"><strong>{{ item.contactName || '—' }}</strong><small>{{ item.email || item.phone || 'Sin contacto' }}</small></span></td>
+      <td>{{ item.defaultCurrencyCode || '—' }}</td><td><span class="badge" [class.badge--ok]="item.status === 'ACTIVE'" [class.badge--neutral]="item.status !== 'ACTIVE'">{{ item.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}</span></td>
+      <td><div class="row-actions">@if (canWrite()) { <button class="row-action" type="button" (click)="openEdit(item)">Editar</button><button class="row-action" type="button" (click)="toggle(item)">{{ item.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}</button> }</div></td>
+    </tr> } @empty { <tr><td colspan="7" class="empty">{{ loading() ? 'Cargando…' : 'No hay proveedores para mostrar.' }}</td></tr> }
+  </tbody></table></div>
+  <footer class="pagination"><span>{{ result()?.total ?? 0 }} proveedores</span><div class="pagination__actions"><button class="btn btn--ghost" type="button" (click)="previous()" [disabled]="(result()?.page ?? 1) <= 1">Anterior</button><span>Página {{ result()?.page ?? 1 }} de {{ result()?.totalPages ?? 1 }}</span><button class="btn btn--ghost" type="button" (click)="next()" [disabled]="(result()?.page ?? 1) >= (result()?.totalPages ?? 1)">Siguiente</button></div></footer>
+</section>
+
+@if (formOpen()) { <div class="backdrop"><section class="dialog" role="dialog"><header class="dialog__head"><div><p class="eyebrow">Proveedor</p><h2>{{ editing() ? 'Editar proveedor' : 'Nuevo proveedor' }}</h2></div><button class="dialog__close" type="button" (click)="formOpen.set(false)">×</button></header><div class="dialog__body"><div class="form-grid">
+  <label class="field"><span>Tipo de documento *</span><select class="input" [(ngModel)]="form.documentType"><option value="RUC">RUC</option><option value="DNI">DNI</option><option value="FOREIGN_TAX_ID">ID fiscal extranjero</option><option value="OTHER">Otro</option></select></label>
+  <label class="field"><span>Número *</span><input class="input" [(ngModel)]="form.documentNumber" maxlength="32"></label>
+  <label class="field"><span>País</span><input class="input" [(ngModel)]="form.countryCode" maxlength="2"></label>
+  <label class="field"><span>Moneda habitual</span><input class="input" [(ngModel)]="form.defaultCurrencyCode" maxlength="3"></label>
+  <label class="field span-2"><span>Razón social *</span><input class="input" [(ngModel)]="form.legalName" maxlength="150"></label>
+  <label class="field span-2"><span>Nombre comercial</span><input class="input" [(ngModel)]="form.tradeName" maxlength="150"></label>
+  <label class="field"><span>Contacto</span><input class="input" [(ngModel)]="form.contactName"></label><label class="field"><span>Teléfono</span><input class="input" [(ngModel)]="form.phone"></label>
+  <label class="field"><span>Correo</span><input class="input" type="email" [(ngModel)]="form.email"></label><label class="field"><span>Dirección</span><input class="input" [(ngModel)]="form.address"></label>
+  <label class="field span-2"><span>Notas internas</span><textarea class="input" [(ngModel)]="form.internalNotes" maxlength="1000"></textarea></label>
+</div></div><footer class="dialog__foot"><button class="btn btn--ghost" type="button" (click)="formOpen.set(false)">Cancelar</button><button class="btn btn--primary" type="button" (click)="save()" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar' }}</button></footer></section></div> }
