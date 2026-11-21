@@ -2,7 +2,7 @@
 
 .app-frame { min-height: 100vh; background: var(--canvas); }
 
-/* --- Sidebar: panel de control en acero ----------------------------------- */
+/* --- Sidebar: color plano -------------------------------------------------- */
 .sidebar {
   position: fixed; inset: 0 auto 0 0; width: 224px; z-index: var(--z-sticky);
   padding: 16px 12px 12px;
@@ -12,11 +12,7 @@
 }
 
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; text-decoration: none; color: #fff; }
-.brand-mark {
-  display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--r-md);
-  background: var(--brand); color: var(--brand-on);
-}
-.brand-text strong { display: block; font-size: 16px; font-weight: 800; letter-spacing: 0.04em; }
+.brand-text strong { display: block; font-size: 13px; font-weight: 800; letter-spacing: 0; line-height: 1.2; white-space: nowrap; }
 .brand-text small { display: block; font-size: 11px; color: var(--shell-muted); margin-top: 1px; }
 
 nav {
@@ -39,7 +35,7 @@ nav a {
   transition: background var(--t) var(--ease), color var(--t) var(--ease);
 }
 nav a:hover { background: var(--shell-2); color: var(--shell-ink); }
-nav a.active { background: var(--shell-2); color: var(--brand); font-weight: 600; }
+nav a.active { background: oklch(1 0 0 / 0.11); color: var(--shell-ink); font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
 nav a.active .nav-icon { opacity: 1; }
 .nav-icon { display: grid; place-items: center; width: 18px; height: 18px; opacity: 0.82; }
 .nav-icon svg { width: 18px; height: 18px; }
@@ -49,11 +45,6 @@ nav a.active .nav-icon { opacity: 1; }
 .profile {
   margin-top: 14px; display: flex; align-items: center; gap: 11px;
   padding: 14px 6px 4px; border-top: 1px solid var(--shell-line);
-}
-.avatar {
-  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
-  background: var(--shell-2); color: var(--shell-ink); font-weight: 700; font-size: 13px;
-  border: 1px solid var(--shell-line);
 }
 .profile-text { min-width: 0; margin-right: auto; }
 .profile-text strong { display: block; font-size: 13px; font-weight: 600; color: var(--shell-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -72,7 +63,7 @@ main { margin-left: 224px; min-height: 100vh; display: flex; flex-direction: col
 .topbar {
   position: sticky; top: 0; z-index: var(--z-dropdown);
   height: 54px; padding: 0 24px; display: flex; align-items: center; gap: 18px;
-  background: oklch(1 0 0 / 0.85); backdrop-filter: blur(8px);
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 .context { margin-right: auto; }

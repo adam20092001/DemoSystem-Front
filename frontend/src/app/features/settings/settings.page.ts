@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -20,7 +21,7 @@ export class SettingsPage implements OnInit {
   protected readonly canEdit = computed(() => this.auth.role() === 'ADMIN');
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
   protected readonly sequences = signal<DocumentSequence[]>([]);
   protected form: UpdateCompanySettings = emptySettings();

@@ -130,7 +130,8 @@ export class CatalogService {
   }
 
   imageUrl(fileUrl: string): string {
-    return new URL(fileUrl, this.config.baseUrl).toString();
+    if (fileUrl.startsWith('/')) return fileUrl;
+    return `${this.config.baseUrl.replace(/\/$/, '')}/${fileUrl.replace(/^\//, '')}`;
   }
 }
 

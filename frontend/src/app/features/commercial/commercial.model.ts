@@ -109,6 +109,9 @@ export interface QuoteItem {
   discountType: 'FIXED' | 'PERCENT' | null;
   discountValue: string | null;
   discountAmount: string;
+  productDescription?: string | null;
+  productSpecifications?: { name: string; value: string; unit: string | null }[];
+  productImageUrl?: string | null;
   stockInfo: {
     currentStock: string;
     requestedQuantity: string;

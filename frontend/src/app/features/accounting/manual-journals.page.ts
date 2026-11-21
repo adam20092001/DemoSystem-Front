@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, forkJoin, take } from 'rxjs';
@@ -11,7 +12,7 @@ import { AccountingService } from './accounting.service';
 export class ManualJournalsPage implements OnInit {
   private readonly api = inject(AccountingService); protected readonly auth = inject(AuthService);
   protected readonly canWrite = computed(() => ['ADMIN', 'ACCOUNTANT'].includes(this.auth.role()));
-  protected readonly result = signal<PaginatedResponse<ManualJournalDraft> | null>(null); protected readonly accounts = signal<AccountingAccount[]>([]); protected readonly loading = signal(false); protected readonly error = signal<string | null>(null); protected readonly notice = signal<string | null>(null); protected readonly formOpen = signal(false); protected readonly editing = signal<ManualJournalDraft | null>(null);
+  protected readonly result = signal<PaginatedResponse<ManualJournalDraft> | null>(null); protected readonly accounts = signal<AccountingAccount[]>([]); protected readonly loading = signal(false); protected readonly error = visibleErrorSignal(); protected readonly notice = signal<string | null>(null); protected readonly formOpen = signal(false); protected readonly editing = signal<ManualJournalDraft | null>(null);
   protected status = ''; protected accountingDate = today(); protected description = ''; protected lines: ManualJournalLine[] = [emptyLine()];
   ngOnInit(): void { forkJoin({ accounts: this.api.listChartAccounts({ page: 1, limit: 100, status: 'ACTIVE', isPostable: true }), drafts: this.api.listManualJournals({ page: 1, limit: 20 }) }).pipe(take(1)).subscribe({ next: ({ accounts, drafts }) => { this.accounts.set(accounts.data); this.result.set(drafts); }, error: e => this.error.set(requestErrorMessage(e)) }); }
   protected load(page = 1): void { this.loading.set(true); this.api.listManualJournals({ page, limit: 20, status: this.status }).pipe(take(1), finalize(() => this.loading.set(false))).subscribe({ next: value => this.result.set(value), error: e => this.error.set(requestErrorMessage(e)) }); }

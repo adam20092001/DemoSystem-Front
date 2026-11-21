@@ -42,9 +42,11 @@
               [class.product-card--selected]="isInCart(product.id)"
               [class.product-card--out]="stockState(product) === 'out'"
               [class.product-card--low]="stockState(product) === 'low'"
-              [disabled]="stockState(product) === 'out'"
+              [disabled]="stockState(product) === 'out' && !isInCart(product.id)"
+              [attr.aria-pressed]="isInCart(product.id)"
+              [attr.aria-label]="(isInCart(product.id) ? 'Quitar ' : 'Agregar ') + product.name"
               type="button"
-              (click)="addProduct(product)"
+              (click)="toggleProduct(product)"
             >
               <span class="product-visual">
                 @if (productImage(product); as image) {
@@ -66,7 +68,7 @@
                 } @else {
                   <small>Servicio</small>
                 }
-                <span class="add-product" aria-hidden="true">{{ isInCart(product.id) ? '✓' : '+' }}</span>
+                <span class="add-product" aria-hidden="true">{{ isInCart(product.id) ? '×' : '+' }}</span>
               </span>
             </button>
           }
@@ -170,7 +172,7 @@
     <section class="dialog dialog--small">
       <header class="dialog__head"><div><p class="eyebrow">Venta registrada</p><h2 class="mono">{{ completedSale()!.number }}</h2></div><button class="dialog__close" type="button" (click)="closeResult()">×</button></header>
       <div class="dialog__body"><div class="detail-grid"><div class="detail-card"><span>Cliente</span><strong>{{ completedSale()!.customerName }}</strong></div><div class="detail-card"><span>Total</span><strong>{{ formatMoney(completedSale()!.total) }}</strong></div><div class="detail-card"><span>Saldo</span><strong>{{ formatMoney(completedSale()!.balanceDue) }}</strong></div></div></div>
-      <footer class="dialog__foot"><button class="btn btn--ghost" type="button" (click)="commercial.openSalePrint(completedSale()!.id)">Imprimir</button><button class="btn btn--primary" type="button" (click)="closeResult()">Nueva venta</button></footer>
+      <footer class="dialog__foot"><button class="btn btn--ghost" type="button" (click)="commercial.openSalePrint(completedSale()!.id)">Abrir PDF</button><button class="btn btn--primary" type="button" (click)="closeResult()">Nueva venta</button></footer>
     </section>
   </div>
 }

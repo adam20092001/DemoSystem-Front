@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Observable, finalize, forkJoin, take } from 'rxjs';
@@ -32,7 +33,7 @@ import {
 } from './commercial.util';
 
 interface QuoteFormLine { key: number; productId: string; quantity: string; discountType: '' | 'FIXED' | 'PERCENT'; discountValue: string; }
-interface QuoteForm { customerId: string; expirationDate: string; discountAmount: string; notes: string; items: QuoteFormLine[]; }
+interface QuoteForm { customerId: string; expirationDate: string; notes: string; items: QuoteFormLine[]; }
 interface ConversionPaymentLine { key: number; method: PaymentMethod; amount: string; reference: string; }
 type QuoteAction = 'accept' | 'reject';
 
@@ -65,7 +66,7 @@ export class QuotesPage implements OnInit {
   protected readonly loadingLookups = signal(false);
   protected readonly actionLoading = signal(false);
   protected readonly exporting = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
   protected readonly formOpen = signal(false);
   protected readonly editing = signal<QuoteDetail | null>(null);
@@ -118,7 +119,6 @@ export class QuotesPage implements OnInit {
         this.form = {
           customerId: quote.customerId,
           expirationDate: quote.expirationDate,
-          discountAmount: quote.discountAmount,
           notes: quote.notes ?? '',
           items: quote.items.map(item => ({ key: this.nextLineKey(), productId: item.productId, quantity: item.quantity, discountType: item.discountType ?? '', discountValue: item.discountValue ?? '0' })),
         };
@@ -144,15 +144,20 @@ export class QuotesPage implements OnInit {
   }
   protected isInQuote(productId: string): boolean { return this.form.items.some(item => item.productId === productId); }
   protected productImage(product: ProductListItem): string | null { return product.primaryImage ? this.catalog.imageUrl(product.primaryImage.fileUrl) : null; }
+  protected quoteImage(fileUrl: string | null | undefined): string | null { return fileUrl ? this.catalog.imageUrl(fileUrl) : null; }
 
   protected submitQuote(event: Event): void {
     event.preventDefault();
-    const validation = validateQuoteForm(this.form);
+    const validation = validateQuoteForm(this.form, this.editing()?.issueDate ?? localToday());
     if (validation) { this.error.set(validation); return; }
     for (const item of this.form.items) {
       const product = this.productFor(item.productId);
       if (product && !product.unit.allowDecimal && !Number.isInteger(Number(item.quantity))) {
         this.error.set(`${product.name} solo admite cantidades enteras.`);
+        return;
+      }
+      if (product && item.discountType === 'FIXED' && Number(item.discountValue) > this.lineGrossTotal(item)) {
+        this.error.set(`El descuento de ${product.name} no puede superar el importe del producto.`);
         return;
       }
     }
@@ -166,7 +171,7 @@ export class QuotesPage implements OnInit {
     if (editing) {
       const request: UpdateQuoteRequest = {
         ...(this.form.expirationDate ? { expirationDate: this.form.expirationDate } : {}),
-        discountAmount: this.form.discountAmount.trim() || '0',
+        discountAmount: '0',
         notes: this.form.notes.trim(),
         items,
       };
@@ -175,7 +180,6 @@ export class QuotesPage implements OnInit {
       const request: CreateQuoteRequest = {
         customerId: this.form.customerId,
         ...(this.form.expirationDate ? { expirationDate: this.form.expirationDate } : {}),
-        discountAmount: this.form.discountAmount.trim() || '0',
         ...(this.form.notes.trim() ? { notes: this.form.notes.trim() } : {}),
         items,
       };
@@ -256,14 +260,17 @@ export class QuotesPage implements OnInit {
   }
 
   protected productFor(id: string): ProductListItem | undefined { return this.products().find(product => product.id === id); }
-  protected lineGrossTotal(line: QuoteFormLine): number { return Number(this.productFor(line.productId)?.salePrice ?? 0) * Number(line.quantity || 0); }
+  protected lineGrossTotal(line: QuoteFormLine): number { return roundMoney(Number(this.productFor(line.productId)?.salePrice ?? 0) * Number(line.quantity || 0)); }
   protected lineDiscount(line: QuoteFormLine): number {
     const gross = this.lineGrossTotal(line);
-    return line.discountType === 'PERCENT' ? gross * Number(line.discountValue || 0) / 100 : line.discountType === 'FIXED' ? Number(line.discountValue || 0) : 0;
+    return line.discountType === 'PERCENT' ? roundMoney(gross * Number(line.discountValue || 0) / 100) : line.discountType === 'FIXED' ? Number(line.discountValue || 0) : 0;
   }
   protected lineTotal(line: QuoteFormLine): number { return Math.max(0, this.lineGrossTotal(line) - this.lineDiscount(line)); }
-  protected previewSubtotal(): number { return this.form.items.reduce((sum, line) => sum + this.lineTotal(line), 0); }
-  protected previewTotal(): number { return Math.max(0, this.previewSubtotal() - Number(this.form.discountAmount || 0)); }
+  protected previewSubtotal(): number { return this.form.items.reduce((sum, line) => sum + this.lineGrossTotal(line), 0); }
+  protected previewDiscount(): number { return this.form.items.reduce((sum, line) => sum + this.lineDiscount(line), 0); }
+  protected previewTotal(): number { return Math.max(0, this.previewSubtotal() - this.previewDiscount()); }
+  protected detailDiscount(): number { return this.detail()?.items.reduce((sum, item) => sum + Number(item.discountAmount), 0) ?? 0; }
+  protected detailSubtotal(): number { return Number(this.detail()?.itemsTotal ?? 0) + this.detailDiscount(); }
   protected formatMoney(value: string | number, currency = 'PEN'): string { return money(value, currency); }
   protected formatDate(value: string): string { return shortDate(value); }
   protected formatQuantity(value: string | number, allowDecimal: boolean): string { return quantity(value, allowDecimal); }
@@ -338,18 +345,30 @@ export class QuotesPage implements OnInit {
 }
 
 function emptyQuoteForm(_key = 1): QuoteForm {
-  return { customerId: '', expirationDate: '', discountAmount: '0', notes: '', items: [] };
+  return { customerId: '', expirationDate: '', notes: '', items: [] };
 }
 
-function validateQuoteForm(form: QuoteForm): string | null {
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function validateQuoteForm(form: QuoteForm, issueDate: string): string | null {
   if (!form.customerId) return 'Selecciona un cliente.';
-  if (!validAmount(form.discountAmount || '0', true)) return 'El descuento debe ser un monto válido con máximo 2 decimales.';
+  if (form.expirationDate && form.expirationDate < issueDate) return 'La fecha de vencimiento no puede ser anterior a la fecha de emisión.';
   if (!form.items.length || form.items.some(item => !item.productId)) return 'Agrega al menos un producto o servicio.';
   if (form.items.some(item => !validQuantity(item.quantity))) return 'Cada cantidad debe ser mayor que cero y tener máximo 3 decimales.';
   if (new Set(form.items.map(item => item.productId)).size !== form.items.length) return 'No repitas productos; ajusta la cantidad en una sola línea.';
   if (form.items.some(item => item.discountType && !validAmount(item.discountValue || '0', true))) return 'Cada descuento debe ser un valor válido con máximo 2 decimales.';
   if (form.items.some(item => item.discountType === 'PERCENT' && Number(item.discountValue) > 100)) return 'El descuento porcentual no puede superar 100%.';
   return null;
+}
+
+function localToday(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function validatePayment(methods: readonly PaymentMethodDefinition[], method: PaymentMethod, amount: string, reference: string): string | null {

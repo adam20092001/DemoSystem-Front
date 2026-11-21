@@ -6,6 +6,8 @@ import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavigationItem, UserRole } from '../../core/models/navigation.model';
 import { SireDemoService } from '../../features/sire-demo/sire-demo.service';
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
+import { shortDate } from '../../features/commercial/commercial.util';
 
 interface NavigationSection {
   label: string;
@@ -55,7 +57,7 @@ export class AppShellComponent implements OnInit {
   private readonly sire = inject(SireDemoService);
   protected readonly menuOpen = signal(false);
   protected readonly switchingRole = signal(false);
-  protected readonly roleError = signal<string | null>(null);
+  protected readonly roleError = visibleErrorSignal();
   protected readonly sireAvailable = signal(false);
   private readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT', 'ACCOUNTANT'];
 
@@ -110,15 +112,7 @@ export class AppShellComponent implements OnInit {
     this.sire.context().pipe(take(1)).subscribe({ next: () => this.sireAvailable.set(true), error: () => this.sireAvailable.set(false) });
   }
 
-  protected readonly todayLabel = new Intl.DateTimeFormat('es-PE', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date());
-
-  protected readonly initials = computed(() =>
-    this.auth.userName().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
-  );
+  protected readonly todayLabel = shortDate(new Date().toISOString());
 
   private readonly iconCache = new Map<string, SafeHtml>();
 

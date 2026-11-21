@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
@@ -39,7 +40,7 @@ export class PaymentsPage implements OnInit {
   protected readonly loadingReceivables = signal(false);
   protected readonly actionLoading = signal(false);
   protected readonly exportingReceivables = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
   protected readonly cancelPayment = signal<Payment | null>(null);
   protected readonly receivablePayment = signal<ReceivableItem | null>(null);

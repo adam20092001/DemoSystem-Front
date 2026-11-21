@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { finalize, take } from 'rxjs';
@@ -67,7 +68,7 @@ export class ChangePasswordPage {
   private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
 
   protected onSubmit(
     event: Event,

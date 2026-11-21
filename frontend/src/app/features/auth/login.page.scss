@@ -1,23 +1,22 @@
 .login { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; background: var(--canvas); }
 
-/* --- Panel institucional (acero, plano, sin ornamento decorativo) --------- */
+/* --- Panel institucional ---------------------------------------------------- */
 .promo {
   padding: 44px 4.5vw; display: flex; flex-direction: column;
-  background: var(--shell); color: var(--shell-ink);
-  border-right: 1px solid var(--shell-line);
+  background: oklch(0.93 0.012 230); color: var(--ink);
+  border-right: 1px solid var(--line);
 }
 
-.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: #fff; font-size: 16px; font-weight: 700; letter-spacing: 0.03em; }
-.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--r-md); background: var(--brand); color: var(--brand-on); }
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: var(--ink); font-size: 16px; font-weight: 700; letter-spacing: 0.03em; }
 
 .promo-body { margin: auto 0 32px; max-width: 34ch; }
-.promo-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.01em; color: var(--shell-muted); margin: 0 0 14px; }
+.promo-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.01em; color: var(--ink-2); margin: 0 0 14px; }
 .promo h1 { font-size: clamp(26px, 2.6vw, 34px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin: 0 0 14px; text-wrap: balance; }
-.promo .lead { color: var(--shell-muted); font-size: 14px; line-height: 1.6; max-width: 40ch; margin: 0; }
+.promo .lead { color: var(--ink-2); font-size: 14px; line-height: 1.6; max-width: 40ch; margin: 0; }
 
 .module-list {
   list-style: none; margin: 0; padding: 20px 0 0; display: grid; gap: 10px;
-  border-top: 1px solid var(--shell-line); font-size: 13px; color: var(--shell-ink);
+  border-top: 1px solid var(--line-strong); font-size: 13px; color: var(--ink);
 }
 .module-list li { display: flex; align-items: center; gap: 10px; }
 .module-list li::before {
@@ -25,8 +24,8 @@
 }
 
 /* --- Panel de acceso -------------------------------------------------------- */
-.access { display: grid; place-items: center; padding: 44px 24px; }
-form { width: min(360px, 100%); }
+.access { display: grid; place-items: center; padding: 44px 24px; background: var(--canvas); }
+form { width: min(410px, 100%); padding: 32px; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--surface); box-shadow: 0 20px 52px oklch(0.32 0.06 250 / 0.08); }
 form h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
 form .field { margin-top: 16px; }
 .error-banner {
@@ -43,4 +42,5 @@ form .field { margin-top: 16px; }
 
 @media (max-width: 480px) {
   .access { align-items: start; padding: max(48px, 10vh) 18px 28px; }
+  form { padding: 24px; }
 }

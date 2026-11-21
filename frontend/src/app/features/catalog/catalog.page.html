@@ -313,6 +313,24 @@
           <label class="field"><span>Descripción comercial</span><textarea class="input textarea" name="commercialDescription" [(ngModel)]="productForm.commercialDescription" maxlength="1000" rows="4"></textarea></label>
           <label class="field"><span>Notas internas</span><textarea class="input textarea" name="internalNotes" [(ngModel)]="productForm.internalNotes" maxlength="1000" rows="4"></textarea></label>
         </div>
+        <div class="product-image-field">
+          <div class="product-image-field__preview">
+            @if (productFormImagePreview() || currentProductImageUrl(); as imageUrl) {
+              <img [src]="imageUrl" alt="Vista previa del producto">
+            } @else {
+              <span>Sin imagen</span>
+            }
+          </div>
+          <div class="product-image-field__controls">
+            <strong>Imagen del producto</strong>
+            <p>JPEG, PNG o WebP · máximo 5 MB. Se mostrará completa en el catálogo y las cotizaciones.</p>
+            <div>
+              <label class="btn btn--ghost btn--small file-button"><input type="file" accept="image/jpeg,image/png,image/webp" (change)="selectProductFormImage($event)" [disabled]="actionLoading()">{{ currentProductImageUrl() ? 'Subir otra imagen' : 'Seleccionar imagen' }}</label>
+              @if (productFormImagePreview()) { <button class="btn btn--quiet btn--small" type="button" (click)="removeProductFormImage()" [disabled]="actionLoading()">Quitar selección</button> }
+            </div>
+            @if (productFormImagePreview()) { <small>La imagen se subirá al guardar el producto.</small> }
+          </div>
+        </div>
         <div class="modal-actions"><button class="btn btn--quiet" type="button" (click)="closeProductForm()" [disabled]="actionLoading()">Cancelar</button><button class="btn btn--primary" type="submit" [disabled]="actionLoading()">{{ actionLoading() ? 'Guardando…' : productFormMode() === 'create' ? 'Crear producto' : 'Guardar cambios' }}</button></div>
       </form>
     </section>

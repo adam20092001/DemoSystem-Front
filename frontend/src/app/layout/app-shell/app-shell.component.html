@@ -3,13 +3,7 @@
 
   <aside class="sidebar" [class.is-open]="menuOpen()">
     <a class="brand" routerLink="/dashboard" (click)="menuOpen.set(false)">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-          <path d="M4 20V9l8-5 8 5v11" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M9 20v-6h6v6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      <span class="brand-text"><strong>IMDIMAQ</strong><small>Gestión comercial</small></span>
+      <span class="brand-text"><strong>Sistema de Gestion</strong><small>Gestión empresarial</small></span>
     </a>
 
     <nav aria-label="Navegación principal">
@@ -27,7 +21,6 @@
     </nav>
 
     <div class="profile">
-      <span class="avatar">{{ initials() }}</span>
       <span class="profile-text"><strong>{{ auth.userName() }}</strong><small>{{ roleLabel(auth.role()) }}</small></span>
       <button class="logout" (click)="logout()" aria-label="Cerrar sesión" title="Cerrar sesión">
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>

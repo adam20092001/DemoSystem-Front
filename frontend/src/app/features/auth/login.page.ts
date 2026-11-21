@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { finalize, take } from 'rxjs';
@@ -10,18 +11,12 @@ import { ApiRequestError } from '../../core/errors/api-request.error';
     <main class="login">
       <section class="promo">
         <a class="brand" href="#">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
-              <path d="M4 20V9l8-5 8 5v11" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-              <path d="M9 20v-6h6v6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          <span>IMDIMAQ</span>
+          <span>Sistema de Gestion</span>
         </a>
         <div class="promo-body">
-          <p class="promo-kicker">Sistema interno de gestión comercial</p>
-          <h1>Control sencillo para ventas e inventario.</h1>
-          <p class="lead">Productos, cotizaciones, ventas e inventario en un solo lugar.</p>
+          <p class="promo-kicker">Plataforma de gestión empresarial</p>
+          <h1>Control sencillo para tu negocio.</h1>
+          <p class="lead">Ventas, compras, inventario y reportes en un solo lugar.</p>
         </div>
         <ul class="module-list">
           <li>Catálogo y productos</li>
@@ -69,7 +64,7 @@ export class LoginPage {
   private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
 
   protected onSubmit(event: Event, username: string, password: string): void {
     event.preventDefault();

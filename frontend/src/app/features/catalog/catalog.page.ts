@@ -1,6 +1,7 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Observable, finalize, forkJoin, take } from 'rxjs';
+import { Observable, finalize, forkJoin, of, switchMap, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApiRequestError } from '../../core/errors/api-request.error';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
@@ -106,13 +107,15 @@ export class CatalogPage implements OnInit {
   protected readonly loadingDetail = signal(false);
   protected readonly actionLoading = signal(false);
   protected readonly exportingProducts = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
 
   protected readonly productFormMode = signal<FormMode | null>(null);
   protected readonly categoryFormMode = signal<FormMode | null>(null);
   protected readonly unitFormMode = signal<FormMode | null>(null);
   protected readonly editingProductId = signal<string | null>(null);
+  protected readonly productFormImagePreview = signal<string | null>(null);
+  protected readonly currentProductImageUrl = signal<string | null>(null);
   protected readonly editingCategoryId = signal<string | null>(null);
   protected readonly editingUnitId = signal<string | null>(null);
   protected readonly selectedProduct = signal<ProductDetail | null>(null);
@@ -120,6 +123,7 @@ export class CatalogPage implements OnInit {
   protected readonly editingSpecificationId = signal<string | null>(null);
 
   protected productForm: ProductForm = emptyProductForm();
+  private productFormImageFile: File | null = null;
   protected categoryForm: CategoryForm = emptyCategoryForm();
   protected unitForm: UnitForm = emptyUnitForm();
   protected specificationForm: SpecificationForm = emptySpecificationForm();
@@ -211,6 +215,8 @@ export class CatalogPage implements OnInit {
 
   protected openCreateProduct(): void {
     this.error.set(null);
+    this.clearProductFormImage();
+    this.currentProductImageUrl.set(null);
     this.productForm = emptyProductForm();
     this.editingProductId.set(null);
     this.productFormMode.set('create');
@@ -225,6 +231,8 @@ export class CatalogPage implements OnInit {
     ).subscribe({
       next: detail => {
         this.selectedProduct.set(null);
+        this.clearProductFormImage();
+        this.currentProductImageUrl.set(detail.primaryImage ? this.catalog.imageUrl(detail.primaryImage.fileUrl) : null);
         this.closeSpecificationForm();
         this.productForm = {
           sku: detail.sku,
@@ -248,6 +256,8 @@ export class CatalogPage implements OnInit {
 
   protected closeProductForm(): void {
     if (this.actionLoading()) return;
+    this.clearProductFormImage();
+    this.currentProductImageUrl.set(null);
     this.productFormMode.set(null);
     this.editingProductId.set(null);
     this.error.set(null);
@@ -258,6 +268,38 @@ export class CatalogPage implements OnInit {
       this.productForm.isInventoryTracked = false;
       this.productForm.stockMinimum = '0';
     }
+  }
+
+  protected selectProductFormImage(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      this.error.set('Selecciona una imagen JPEG, PNG o WebP.');
+      input.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.error.set('La imagen no puede superar 5 MB.');
+      input.value = '';
+      return;
+    }
+    this.clearProductFormImage();
+    this.productFormImageFile = file;
+    this.productFormImagePreview.set(URL.createObjectURL(file));
+    this.error.set(null);
+    input.value = '';
+  }
+
+  protected removeProductFormImage(): void {
+    this.clearProductFormImage();
+  }
+
+  private clearProductFormImage(): void {
+    const preview = this.productFormImagePreview();
+    if (preview) URL.revokeObjectURL(preview);
+    this.productFormImagePreview.set(null);
+    this.productFormImageFile = null;
   }
 
   protected submitProduct(event: Event): void {
@@ -289,13 +331,57 @@ export class CatalogPage implements OnInit {
       : editingId
         ? this.catalog.updateProduct(editingId, request)
         : null;
-    if (!request$) return;
+    if (!request$ || !mode) return;
 
-    this.perform(request$, mode === 'create' ? 'Producto creado correctamente.' : 'Producto actualizado correctamente.', () => {
-      this.productFormMode.set(null);
-      this.editingProductId.set(null);
-      this.loadProducts(mode === 'create' ? 1 : (this.products()?.page ?? 1));
+    this.actionLoading.set(true);
+    this.error.set(null);
+    request$.pipe(take(1)).subscribe({
+      next: saved => {
+        const image = this.productFormImageFile;
+        if (!image) {
+          this.finishProductSave(mode, false);
+          return;
+        }
+        this.editingProductId.set(saved.id);
+        this.productFormMode.set('edit');
+        let uploadedImageId: string | null = null;
+        this.catalog.uploadImage(saved.id, image).pipe(
+          take(1),
+          switchMap(uploaded => {
+            uploadedImageId = uploaded.id;
+            return uploaded.isPrimary ? of(uploaded) : this.catalog.setPrimaryImage(saved.id, uploaded.id);
+          }),
+        ).subscribe({
+          next: () => this.finishProductSave(mode, true),
+          error: error => {
+            this.actionLoading.set(false);
+            if (uploadedImageId) {
+              this.clearProductFormImage();
+              this.error.set(`La imagen se subió, pero no se pudo establecer como principal: ${errorMessage(error)}`);
+            } else {
+              this.error.set(`El producto se guardó, pero no se pudo subir la imagen: ${errorMessage(error)}`);
+            }
+            this.loadProducts(this.products()?.page ?? 1);
+          },
+        });
+      },
+      error: error => {
+        this.actionLoading.set(false);
+        this.error.set(errorMessage(error));
+      },
     });
+  }
+
+  private finishProductSave(mode: FormMode, imageUploaded: boolean): void {
+    this.actionLoading.set(false);
+    this.notice.set(mode === 'create'
+      ? imageUploaded ? 'Producto e imagen guardados correctamente.' : 'Producto creado correctamente.'
+      : imageUploaded ? 'Producto e imagen actualizados correctamente.' : 'Producto actualizado correctamente.');
+    this.clearProductFormImage();
+    this.currentProductImageUrl.set(null);
+    this.productFormMode.set(null);
+    this.editingProductId.set(null);
+    this.loadProducts(mode === 'create' ? 1 : (this.products()?.page ?? 1));
   }
 
   protected openProductDetail(product: ProductListItem): void {

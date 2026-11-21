@@ -1,41 +1,44 @@
 /* ============================================================================
-   IMDIMAQ · Sistema de diseño transversal (Módulo 1 — base visual)
-   Registro: producto interno / POS. Estrategia de color: neutro acero + un
-   único acento naranja industrial + vocabulario semántico de estados.
+   Sistema de Gestion · Sistema de diseño transversal (Módulo 1 — base visual)
+   Registro: producto interno / POS. Paleta corporativa de azul grisáceo,
+   superficies neutras y estados semánticos diferenciados.
    Todo el color en OKLCH. Este archivo es la única fuente de tokens.
    ============================================================================ */
 
 :root {
-  /* --- Marca: naranja industrial IMDIMAQ ------------------------------------ */
-  --brand: oklch(0.70 0.185 48);          /* acción primaria */
-  --brand-strong: oklch(0.62 0.185 46);   /* hover / pressed */
-  --brand-tint: oklch(0.955 0.038 62);    /* fondo suave (seleccionado, chips) */
-  --brand-ink: oklch(0.46 0.135 46);      /* texto sobre tinte claro de marca */
-  --brand-on: oklch(0.99 0.012 80);       /* texto sobre marca sólida */
+  /* --- Marca: azul grisáceo ------------------------------------------------- */
+  --brand: oklch(0.48 0.075 240);         /* acción primaria */
+  --brand-strong: oklch(0.40 0.075 240);  /* hover / pressed */
+  --brand-tint: oklch(0.95 0.016 235);    /* fondo suave (seleccionado, chips) */
+  --brand-ink: oklch(0.35 0.065 240);     /* texto sobre tinte claro de marca */
+  --brand-on: oklch(0.99 0.005 255);      /* texto sobre marca sólida */
+  --brand-shell: oklch(0.87 0.035 220);   /* acento legible en navegación */
+  --accent: oklch(0.62 0.05 215);
+  --accent-tint: oklch(0.96 0.014 215);
 
-  /* --- Shell: panel de control en grafito acero ---------------------------- */
-  --shell: oklch(0.255 0.012 250);
-  --shell-2: oklch(0.305 0.014 250);
-  --shell-line: oklch(0.375 0.013 250);
-  --shell-ink: oklch(0.965 0.004 250);
-  --shell-muted: oklch(0.70 0.012 250);
-  --shell-faint: oklch(0.58 0.012 250);
+  /* --- Estructura: pizarra neutra ------------------------------------------ */
+  --shell: oklch(0.28 0.03 240);
+  --shell-2: oklch(0.34 0.03 240);
+  --shell-line: oklch(0.43 0.025 240);
+  --shell-ink: oklch(0.99 0.005 210);
+  --shell-muted: oklch(0.88 0.018 215);
+  --shell-faint: oklch(0.77 0.022 215);
 
   /* --- Superficies de contenido -------------------------------------------- */
-  --canvas: oklch(0.982 0.003 240);
+  --canvas: oklch(0.98 0.005 230);
   --surface: oklch(1 0 0);
-  --surface-2: oklch(0.972 0.004 240);
-  --line: oklch(0.916 0.005 240);
-  --line-strong: oklch(0.865 0.006 240);
+  --surface-2: oklch(0.968 0.006 230);
+  --line: oklch(0.905 0.009 230);
+  --line-strong: oklch(0.85 0.012 230);
 
   /* --- Tinta ---------------------------------------------------------------- */
-  --ink: oklch(0.265 0.014 250);          /* texto principal */
-  --ink-2: oklch(0.435 0.012 250);        /* texto secundario */
-  --muted: oklch(0.525 0.010 250);        /* apoyos, captions */
+  --ink: oklch(0.25 0.02 240);            /* texto principal */
+  --ink-2: oklch(0.43 0.018 235);         /* texto secundario */
+  --muted: oklch(0.53 0.014 230);         /* apoyos, captions */
 
   /* --- Estados semánticos (sólido · tinte · tinta) ------------------------- */
   --ok: oklch(0.60 0.13 155);      --ok-tint: oklch(0.955 0.038 158);   --ok-ink: oklch(0.42 0.10 156);
-  --warn: oklch(0.74 0.145 72);    --warn-tint: oklch(0.955 0.05 82);   --warn-ink: oklch(0.47 0.105 58);
+  --warn: oklch(0.75 0.12 88);     --warn-tint: oklch(0.955 0.045 92);  --warn-ink: oklch(0.45 0.09 78);
   --danger: oklch(0.575 0.20 27);  --danger-tint: oklch(0.955 0.035 25);--danger-ink: oklch(0.475 0.17 27);
   --info: oklch(0.60 0.125 250);   --info-tint: oklch(0.955 0.033 250); --info-ink: oklch(0.46 0.12 253);
 

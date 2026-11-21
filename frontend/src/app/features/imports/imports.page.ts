@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, forkJoin, take } from 'rxjs';
@@ -43,7 +44,7 @@ export class ImportsPage implements OnInit {
   protected readonly purchases = signal<PurchaseInvoice[]>([]);
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
   protected readonly operationFormOpen = signal(false);
   protected readonly detailOpen = signal(false);

@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Observable, finalize, take } from 'rxjs';
@@ -48,7 +49,7 @@ export class CustomersPage implements OnInit {
   protected readonly result = signal<PaginatedResponse<Customer> | null>(null);
   protected readonly loading = signal(false);
   protected readonly actionLoading = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
   protected readonly formMode = signal<FormMode | null>(null);
   protected readonly editing = signal<Customer | null>(null);

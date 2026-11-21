@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, Observable, take } from 'rxjs';
@@ -25,7 +26,7 @@ export class ImportReportsPage implements OnInit {
   protected readonly reconciliationResult = signal<PaginatedResponse<ConsolidatedReconciliation> | null>(null);
   protected readonly loading = signal(false);
   protected readonly exporting = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected importOperationId = '';
   protected status = '';
   protected reconciliationStatus = '';

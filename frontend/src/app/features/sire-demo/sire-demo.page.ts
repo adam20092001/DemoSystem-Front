@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,7 +24,7 @@ export class SireDemoPage implements OnInit {
   protected readonly selectedProposal = signal<SireProposal | null>(null);
   protected readonly loading = signal(false);
   protected readonly uploading = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
   protected readonly unavailable = signal(false);
   protected register: SireRegister = 'RVIE';

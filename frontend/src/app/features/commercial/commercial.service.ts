@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_CONFIG } from '../../core/config/api.config';
+import { DocumentPdfService } from '../../core/documents/document-pdf.service';
 import { ApiClient, QueryParams } from '../../core/http/api-client.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
 import {
@@ -28,7 +28,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class CommercialService {
   private readonly api = inject(ApiClient);
-  private readonly config = inject(API_CONFIG);
+  private readonly pdf = inject(DocumentPdfService);
 
   listCustomers(query: ListCustomersQuery): Observable<PaginatedResponse<Customer>> {
     return this.api.get<PaginatedResponse<Customer>>('customers', queryParams(query));
@@ -132,11 +132,11 @@ export class CommercialService {
   }
 
   openQuotePrint(id: string): void {
-    window.open(`${this.config.baseUrl}/quotes/${id}/print`, '_blank', 'noopener');
+    this.pdf.openQuote(id);
   }
 
   openSalePrint(id: string): void {
-    window.open(`${this.config.baseUrl}/sales/${id}/print`, '_blank', 'noopener');
+    this.pdf.openSale(id);
   }
 }
 

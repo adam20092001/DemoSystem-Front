@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
@@ -48,7 +49,7 @@ export class SalesPage implements OnInit {
   protected readonly loading = signal(false);
   protected readonly actionLoading = signal(false);
   protected readonly exporting = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
   protected readonly pendingAction = signal<{ action: SaleAction; sale: SaleListItem | SaleDetail } | null>(null);
   protected readonly paymentSale = signal<SaleListItem | SaleDetail | null>(null);

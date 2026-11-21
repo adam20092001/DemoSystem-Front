@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, forkJoin, take } from 'rxjs';
@@ -40,7 +41,7 @@ export class PosPage implements OnInit {
   protected readonly paymentMethods = signal<PaymentMethodDefinition[]>([]);
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly completedSale = signal<SaleDetail | null>(null);
   protected readonly productSearch = signal('');
   protected readonly filteredProducts = computed(() => {
@@ -64,20 +65,14 @@ export class PosPage implements OnInit {
 
   ngOnInit(): void { this.loadOptions(); }
 
-  protected addProduct(product: ProductListItem): void {
-    if (product.isInventoryTracked && Number(product.stockCurrent) <= 0) {
-      this.error.set(`${product.name} no tiene stock disponible.`);
-      return;
-    }
+  protected toggleProduct(product: ProductListItem): void {
     const existing = this.lines.find(line => line.productId === product.id);
     if (existing) {
-      const next = Number(existing.quantity || 0) + 1;
-      if (product.isInventoryTracked && next > Number(product.stockCurrent)) {
-        this.error.set(`Solo hay ${product.stockCurrent} ${product.unit.abbreviation} de ${product.name}.`);
-        return;
-      }
-      existing.quantity = String(next);
-      this.lines = [...this.lines];
+      this.removeLine(existing.key);
+      return;
+    }
+    if (product.isInventoryTracked && Number(product.stockCurrent) <= 0) {
+      this.error.set(`${product.name} no tiene stock disponible.`);
       return;
     }
     this.lines = [...this.lines, { key: this.lineKey++, productId: product.id, quantity: '1', discount: '0' }];

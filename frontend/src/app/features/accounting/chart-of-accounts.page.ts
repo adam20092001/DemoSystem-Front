@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
@@ -11,7 +12,7 @@ const AUTOMATIC_KEYS: AccountingSystemKey[] = ['ACCOUNTS_PAYABLE', 'VAT_RECEIVAB
 @Component({ selector: 'app-chart-of-accounts', imports: [FormsModule], templateUrl: './chart-of-accounts.page.html', styleUrls: ['../commercial/commercial-page.shared.scss', './accounting.page.scss'], changeDetection: ChangeDetectionStrategy.OnPush })
 export class ChartOfAccountsPage implements OnInit {
   private readonly api = inject(AccountingService); protected readonly auth = inject(AuthService); protected readonly canWrite = computed(() => this.auth.role() === 'ADMIN');
-  protected readonly result = signal<PaginatedResponse<ChartAccount> | null>(null); protected readonly allAccounts = signal<ChartAccount[]>([]); protected readonly loading = signal(false); protected readonly error = signal<string | null>(null); protected readonly notice = signal<string | null>(null); protected readonly formOpen = signal(false); protected readonly editing = signal<ChartAccount | null>(null); protected readonly automaticKeys = AUTOMATIC_KEYS;
+  protected readonly result = signal<PaginatedResponse<ChartAccount> | null>(null); protected readonly allAccounts = signal<ChartAccount[]>([]); protected readonly loading = signal(false); protected readonly error = visibleErrorSignal(); protected readonly notice = signal<string | null>(null); protected readonly formOpen = signal(false); protected readonly editing = signal<ChartAccount | null>(null); protected readonly automaticKeys = AUTOMATIC_KEYS;
   protected search = ''; protected type = ''; protected status = ''; protected form = emptyForm(); protected mapping: Record<string, string> = {};
   ngOnInit(): void { this.load(); }
   protected apply(event: Event): void { event.preventDefault(); this.load(); }

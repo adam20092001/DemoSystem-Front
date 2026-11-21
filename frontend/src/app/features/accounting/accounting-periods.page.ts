@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TitleCasePipe } from '@angular/common';
@@ -12,7 +13,7 @@ import { AccountingService } from './accounting.service';
 export class AccountingPeriodsPage implements OnInit {
   private readonly api = inject(AccountingService); protected readonly auth = inject(AuthService);
   protected readonly canWrite = computed(() => this.auth.role() === 'ADMIN');
-  protected readonly result = signal<PaginatedResponse<AccountingPeriod> | null>(null); protected readonly loading = signal(false); protected readonly error = signal<string | null>(null); protected readonly notice = signal<string | null>(null);
+  protected readonly result = signal<PaginatedResponse<AccountingPeriod> | null>(null); protected readonly loading = signal(false); protected readonly error = visibleErrorSignal(); protected readonly notice = signal<string | null>(null);
   protected year: number | undefined; protected status = ''; protected createYear = new Date().getFullYear(); protected createMonth = new Date().getMonth() + 1; protected readonly createOpen = signal(false);
   ngOnInit(): void { this.load(); }
   protected load(page = 1): void { this.loading.set(true); this.api.listPeriods({ page, limit: 20, year: this.year, status: this.status }).pipe(take(1), finalize(() => this.loading.set(false))).subscribe({ next: value => this.result.set(value), error: e => this.error.set(requestErrorMessage(e)) }); }

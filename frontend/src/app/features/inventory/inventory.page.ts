@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, forkJoin, take } from 'rxjs';
@@ -21,7 +22,7 @@ import {
   RegisterInventoryMovementRequest,
 } from './inventory.model';
 import { InventoryService } from './inventory.service';
-import { quantity } from '../commercial/commercial.util';
+import { dateTime, quantity } from '../commercial/commercial.util';
 
 type InventoryTab = 'movements' | 'low-stock';
 
@@ -63,7 +64,7 @@ export class InventoryPage implements OnInit {
   protected readonly loadingStock = signal(false);
   protected readonly actionLoading = signal(false);
   protected readonly movementFormOpen = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
 
   protected movementSearch = '';
@@ -311,10 +312,7 @@ export class InventoryPage implements OnInit {
   }
 
   protected formatDate(value: string): string {
-    return new Intl.DateTimeFormat('es-PE', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value));
+    return dateTime(value);
   }
 
   protected rangeSummary(result: PaginatedResponse<unknown> | null): string {

@@ -29,14 +29,20 @@ export function quantity(value: string | number, allowDecimal = true): string {
 }
 
 export function shortDate(value: string): string {
-  return new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' }).format(dateValue(value));
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1].slice(-2)}`;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const parts = dateParts(date);
+  return `${parts['day']}/${parts['month']}/${parts['year']}`;
 }
 
 export function dateTime(value: string): string {
-  return new Intl.DateTimeFormat('es-PE', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(dateValue(value));
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return shortDate(value);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const parts = dateParts(date, true);
+  return `${parts['day']}/${parts['month']}/${parts['year']} ${parts['hour']}:${parts['minute']}`;
 }
 
 export function pageRange(result: PaginatedResponse<unknown> | null): string {
@@ -59,8 +65,12 @@ export function validQuantity(value: string): boolean {
   return /^\d{1,11}(\.\d{1,3})?$/.test(value.trim()) && Number(value) > 0;
 }
 
-function dateValue(value: string): Date {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T12:00:00`)
-    : new Date(value);
+function dateParts(date: Date, includeTime = false): Record<string, string> {
+  const options: Intl.DateTimeFormatOptions = {
+    day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/Lima',
+    ...(includeTime ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' as const } : {}),
+  };
+  return Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', options).formatToParts(date).map(part => [part.type, part.value]),
+  );
 }

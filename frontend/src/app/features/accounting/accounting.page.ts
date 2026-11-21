@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -47,7 +48,7 @@ export class AccountingPage implements OnInit {
   protected readonly loadingAccounts = signal(false);
   protected readonly loadingEntries = signal(false);
   protected readonly loadingDetail = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
 
   protected readonly sourceTypes: AccountingSourceType[] = ['SALE', 'PAYMENT', 'MANUAL', 'PURCHASE', 'PURCHASE_RECEIPT', 'SUPPLIER_PAYMENT', 'COGS'];
   protected readonly eventTypes: AccountingEventType[] = [

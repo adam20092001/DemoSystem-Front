@@ -1,3 +1,4 @@
+import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -76,7 +77,7 @@ export class UsersPage implements OnInit {
   protected readonly result = signal<PaginatedResponse<User> | null>(null);
   protected readonly loading = signal(false);
   protected readonly actionLoading = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = visibleErrorSignal();
   protected readonly notice = signal<string | null>(null);
   protected readonly formMode = signal<FormMode | null>(null);
   protected readonly editingUser = signal<User | null>(null);

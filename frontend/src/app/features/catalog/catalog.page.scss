@@ -116,7 +116,7 @@ tbody tr:last-child td { border-bottom: 0; }
   color: var(--muted);
   font-size: 21px;
 }
-.product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.product-thumb img { width: 100%; height: 100%; object-fit: contain; }
 .product-thumb svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .text-link { display: block; max-width: 240px; overflow: hidden; padding: 0; border: 0; background: transparent; color: var(--ink); font-size: 13px; font-weight: 700; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .text-link:hover { color: var(--brand-ink); }
@@ -209,6 +209,14 @@ tbody tr:last-child td { border-bottom: 0; }
 .check-field span { display: block; }
 .check-field strong { display: block; color: var(--ink); font-size: 12.5px; }
 .check-field small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.product-image-field { display: flex; align-items: center; gap: 16px; padding: 13px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.product-image-field__preview { display: grid; width: 116px; height: 116px; flex: 0 0 116px; place-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--muted); font-size: 11px; }
+.product-image-field__preview img { width: 100%; height: 100%; object-fit: contain; }
+.product-image-field__controls { min-width: 0; }
+.product-image-field__controls strong { color: var(--ink); font-size: 12.5px; }
+.product-image-field__controls p { margin: 5px 0 10px; color: var(--muted); font-size: 11px; }
+.product-image-field__controls > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.product-image-field__controls small { display: block; margin-top: 7px; color: var(--muted); font-size: 10.5px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 7px; }
 
 .modal-backdrop--drawer { place-items: stretch end; padding: 0; }
@@ -257,7 +265,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
 .image-card { position: relative; overflow: hidden; margin: 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
 .image-card--primary { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
-.image-card img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--surface-2); }
+.image-card img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: contain; background: var(--surface-2); }
 .image-card figcaption { padding: 9px; }
 .image-card figcaption > span { display: block; color: var(--muted); font-size: 10.5px; }
 .image-card figcaption > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
