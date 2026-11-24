@@ -23,8 +23,8 @@
 
 <section class="panel">
   <form class="filters report-filters" (submit)="applyFilters($event)">
-    <label class="field"><span>Desde</span><input class="input" type="date" name="reportFrom" [(ngModel)]="from"></label>
-    <label class="field"><span>Hasta</span><input class="input" type="date" name="reportTo" [(ngModel)]="to"></label>
+    <label class="field"><span>Desde</span><app-date-input name="reportFrom" [(ngModel)]="from"></app-date-input></label>
+    <label class="field"><span>Hasta</span><app-date-input name="reportTo" [(ngModel)]="to"></app-date-input></label>
 
     @if (activeReport() === 'sales-by-product') {
       <label class="field"><span>Categoría</span><select class="input" name="reportCategory" [(ngModel)]="categoryId"><option value="">Todas</option>@for (category of categories(); track category.id) { <option [value]="category.id">{{ category.name }}</option> }</select></label>

@@ -41,6 +41,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   WAREHOUSE: 'Almacén',
   MANAGEMENT: 'Gerencia',
   ACCOUNTANT: 'Contador',
+  PURCHASING: 'Compras',
 };
 
 @Component({
@@ -59,23 +60,26 @@ export class AppShellComponent implements OnInit {
   protected readonly switchingRole = signal(false);
   protected readonly roleError = visibleErrorSignal();
   protected readonly sireAvailable = signal(false);
-  private readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT', 'ACCOUNTANT'];
+  private readonly roles: UserRole[] = ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT', 'ACCOUNTANT', 'PURCHASING'];
 
   protected readonly nav: NavigationItem[] = [
     { label: 'Resumen', route: '/dashboard', icon: 'grid', roles: ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'] },
     { label: 'Punto de venta', route: '/pos', icon: 'cart', roles: ['ADMIN', 'SELLER'] },
-    { label: 'Productos', route: '/products', icon: 'box', roles: ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT'] },
+    { label: 'Productos', route: '/products', icon: 'box', roles: ['ADMIN', 'SELLER', 'WAREHOUSE', 'MANAGEMENT', 'PURCHASING'] },
     { label: 'Inventario', route: '/inventory', icon: 'layers', roles: ['ADMIN', 'WAREHOUSE', 'MANAGEMENT'] },
+    { label: 'Almacenes', route: '/warehouses', icon: 'box', roles: ['ADMIN', 'WAREHOUSE', 'MANAGEMENT', 'SELLER', 'PURCHASING'] },
+    { label: 'Transferencias', route: '/transfers', icon: 'layers', roles: ['ADMIN', 'WAREHOUSE', 'MANAGEMENT'] },
     { label: 'Valorización', route: '/inventory-valuation', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
     { label: 'Clientes', route: '/customers', icon: 'users', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Cotizaciones', route: '/quotes', icon: 'file', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Ventas', route: '/sales', icon: 'receipt', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
     { label: 'Pagos', route: '/payments', icon: 'wallet', roles: ['ADMIN', 'SELLER', 'MANAGEMENT'] },
-    { label: 'Proveedores', route: '/suppliers', icon: 'truck', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
-    { label: 'Compras', route: '/purchases', icon: 'clipboard', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
-    { label: 'Cuentas por pagar', route: '/accounts-payable', icon: 'wallet', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
-    { label: 'Importaciones', route: '/imports', icon: 'truck', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
-    { label: 'Control de importaciones', route: '/import-reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
+    { label: 'Proveedores', route: '/suppliers', icon: 'truck', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT', 'PURCHASING'] },
+    { label: 'Compras', route: '/purchases', icon: 'clipboard', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT', 'PURCHASING'] },
+    { label: 'Recepción de mercadería', route: '/purchase-receiving', icon: 'box', roles: ['ADMIN', 'WAREHOUSE', 'MANAGEMENT', 'ACCOUNTANT', 'PURCHASING'] },
+    { label: 'Cuentas por pagar', route: '/accounts-payable', icon: 'wallet', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT', 'PURCHASING'] },
+    { label: 'Importaciones', route: '/imports', icon: 'truck', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT', 'PURCHASING'] },
+    { label: 'Control de importaciones', route: '/import-reports', icon: 'chart', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT', 'PURCHASING'] },
     { label: 'SIRE Demo', route: '/sire-demo', icon: 'file', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'], feature: 'sire-demo' },
     { label: 'Contabilidad', route: '/accounting', icon: 'book', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
     { label: 'Plan de cuentas', route: '/chart-of-accounts', icon: 'layers', roles: ['ADMIN', 'MANAGEMENT', 'ACCOUNTANT'] },
@@ -90,8 +94,8 @@ export class AppShellComponent implements OnInit {
 
   private readonly navSections: NavigationSection[] = [
     { label: 'Operación', items: this.nav.filter(item => ['/dashboard', '/pos', '/quotes', '/sales'].includes(item.route)) },
-    { label: 'Catálogo', items: this.nav.filter(item => ['/products', '/inventory', '/inventory-valuation', '/customers'].includes(item.route)) },
-    { label: 'Compras', items: this.nav.filter(item => ['/suppliers', '/purchases', '/accounts-payable', '/imports', '/import-reports'].includes(item.route)) },
+    { label: 'Catálogo', items: this.nav.filter(item => ['/products', '/inventory', '/warehouses', '/transfers', '/inventory-valuation', '/customers'].includes(item.route)) },
+    { label: 'Compras', items: this.nav.filter(item => ['/suppliers', '/purchases', '/purchase-receiving', '/accounts-payable', '/imports', '/import-reports'].includes(item.route)) },
     { label: 'Finanzas', items: this.nav.filter(item => ['/payments', '/accounting', '/chart-of-accounts', '/accounting-periods', '/manual-journals', '/accounting-reports', '/reports', '/electronic-documents', '/sire-demo'].includes(item.route)) },
     { label: 'Administración', items: this.nav.filter(item => ['/users', '/settings'].includes(item.route)) },
   ];
@@ -134,7 +138,7 @@ export class AppShellComponent implements OnInit {
     this.switchingRole.set(true);
     this.roleError.set(null);
     this.auth.switchRole(role).pipe(take(1), finalize(() => this.switchingRole.set(false))).subscribe({
-      next: session => { this.refreshSireAvailability(); this.router.navigateByUrl(session.role === 'ACCOUNTANT' ? '/accounting' : '/dashboard'); },
+      next: session => { this.refreshSireAvailability(); this.router.navigateByUrl(session.role === 'ACCOUNTANT' ? '/accounting' : session.role === 'PURCHASING' ? '/purchases' : session.role === 'WAREHOUSE' ? '/purchase-receiving' : '/dashboard'); },
       error: () => this.roleError.set('No se pudo cambiar el rol activo.'),
     });
   }

@@ -175,6 +175,25 @@ a { color: inherit; }
   .input { height: 42px; font-size: 14px; }
 }
 
+.field-invalid { border-color: var(--danger) !important; background: var(--danger-tint) !important; box-shadow: 0 0 0 1px var(--danger); }
+.field-validation-message { display: block; margin-top: 5px; color: var(--danger-ink); font-size: 11px; line-height: 1.4; }
+.nested-editor .backdrop.backdrop, .nested-editor .modal-backdrop.modal-backdrop { z-index: calc(var(--z-backdrop) + 10); }
+.backdrop.editor-overlay { z-index: calc(var(--z-backdrop) + 5); }
+.nested-editor .nested-editor .backdrop.backdrop, .nested-editor .nested-editor .modal-backdrop.modal-backdrop { z-index: calc(var(--z-backdrop) + 20); }
+.backdrop, .modal-backdrop { overflow-y: auto; padding-block: 20px; align-items: center !important; }
+.dialog, .modal { min-width: 0; max-width: calc(100vw - 32px); max-height: calc(100dvh - 40px); overflow-x: hidden; overflow-y: auto; margin: auto; }
+.dialog__body, .modal-body { min-width: 0; }
+.dialog__head, .modal-header { overflow-wrap: anywhere; }
+:where(.notice--error, .error-banner, .modal-error, app-notification-host .notification) {
+  animation: error-notice-lifetime 5s both;
+}
+@keyframes error-notice-lifetime {
+  0% { opacity:0; transform:translateY(-8px); }
+  5%, 94% { opacity:1; transform:translateY(0); }
+  100% { opacity:0; transform:translateY(-5px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  :where(.notice--error, .error-banner, .modal-error, app-notification-host .notification) { animation: none !important; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

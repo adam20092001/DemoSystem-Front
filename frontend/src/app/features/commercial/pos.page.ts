@@ -1,3 +1,4 @@
+import { MoneyInputDirective } from '../../shared/money-input.directive';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -10,6 +11,7 @@ import { PaymentMethodDefinition } from '../payment-methods/payment-method.model
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import { Customer, PaymentMethod, PaymentRequest, SaleDetail } from './commercial.model';
 import { CommercialService } from './commercial.service';
+import { LocationOption, LocationsService, StockByLocation } from '../inventory/locations.service';
 import {
   money,
   quantity,
@@ -19,12 +21,12 @@ import {
   validQuantity,
 } from './commercial.util';
 
-interface PosLine { key: number; productId: string; quantity: string; discount: string; }
+interface PosLine { key: number; productId: string; quantity: string; discount: string; locationId: string; }
 interface PosPaymentLine { key: number; method: PaymentMethod; amount: string; reference: string; }
 
 @Component({
   selector: 'app-pos',
-  imports: [FormsModule],
+  imports: [MoneyInputDirective, FormsModule],
   templateUrl: './pos.page.html',
   styleUrls: ['./commercial-page.shared.scss', './pos.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,6 +36,9 @@ export class PosPage implements OnInit {
   protected readonly catalog = inject(CatalogService);
   private readonly settingsService = inject(SettingsService);
   private readonly paymentMethodsService = inject(PaymentMethodsService);
+  private readonly locationsApi = inject(LocationsService);
+  protected readonly locations = signal<LocationOption[]>([]);
+  protected readonly stockByProduct = signal<Record<string, StockByLocation>>({});
 
   protected readonly customers = signal<Customer[]>([]);
   protected readonly products = signal<ProductListItem[]>([]);
@@ -63,7 +68,7 @@ export class PosPage implements OnInit {
   private lineKey = 2;
   private paymentKey = 1;
 
-  ngOnInit(): void { this.loadOptions(); }
+  ngOnInit(): void { this.loadOptions(); this.locationsApi.activeLocations().pipe(take(1)).subscribe({ next: value => this.locations.set(value), error: error => this.error.set(requestErrorMessage(error)) }); }
 
   protected toggleProduct(product: ProductListItem): void {
     const existing = this.lines.find(line => line.productId === product.id);
@@ -75,7 +80,8 @@ export class PosPage implements OnInit {
       this.error.set(`${product.name} no tiene stock disponible.`);
       return;
     }
-    this.lines = [...this.lines, { key: this.lineKey++, productId: product.id, quantity: '1', discount: '0' }];
+    this.lines = [...this.lines, { key: this.lineKey++, productId: product.id, quantity: '1', discount: '0', locationId: '' }];
+    if (product.isInventoryTracked) this.locationsApi.stockByLocation(product.id).pipe(take(1)).subscribe({ next: stock => this.stockByProduct.update(current => ({ ...current, [product.id]: stock })), error: error => this.error.set(requestErrorMessage(error)) });
   }
 
   protected removeLine(key: number): void { this.lines = this.lines.filter(line => line.key !== key); }
@@ -164,7 +170,7 @@ export class PosPage implements OnInit {
     this.commercial.createSale({
       customerId: this.customerId,
       discountAmount: this.totalDiscount().toFixed(2),
-      items: this.lines.map(line => ({ productId: line.productId, quantity: line.quantity.trim() })),
+      items: this.lines.map(line => ({ productId: line.productId, quantity: line.quantity.trim(), ...(line.locationId ? { locationId: line.locationId } : {}) })),
       ...(payments.length ? { payments } : {}),
     }).pipe(take(1), finalize(() => this.saving.set(false))).subscribe({
       next: sale => { this.completedSale.set(sale); this.resetForm(); this.loadOptions(); },
@@ -173,6 +179,11 @@ export class PosPage implements OnInit {
   }
 
   protected closeResult(): void { this.completedSale.set(null); }
+
+  protected locationStock(line: PosLine): string {
+    const selected = line.locationId || this.locations().find(item => item.warehouseCode === 'MAIN' && item.isDefault)?.id;
+    return this.stockByProduct()[line.productId]?.locations.find(row => row.location.id === selected)?.quantity ?? '0';
+  }
 
   private loadOptions(): void {
     this.loading.set(true);
@@ -206,6 +217,7 @@ export class PosPage implements OnInit {
       const product = this.productFor(line.productId);
       if (product && !product.unit.allowDecimal && !Number.isInteger(Number(line.quantity))) return `${product.name} solo admite cantidades enteras.`;
       if (product?.isInventoryTracked && Number(line.quantity) > Number(product.stockCurrent)) return `${product.name} solo tiene ${product.stockCurrent} ${product.unit.abbreviation} disponibles.`;
+      if (product?.isInventoryTracked && this.stockByProduct()[line.productId] && Number(line.quantity) > Number(this.locationStock(line))) return `${product.name} no tiene stock suficiente en la ubicación elegida.`;
     }
     if (this.paymentEnabled) {
       if (!this.paymentLines.length || this.paymentLines.length > 10) return 'Registra entre 1 y 10 pagos iniciales.';

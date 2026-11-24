@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClient, QueryParams } from '../../core/http/api-client.service';
 import { PaginatedResponse } from '../../core/models/paginated-response.model';
+import type { ReceivingSummary } from './import-receiving.model';
 import { AllocateImportExpenseRequest, ConsolidatedReconciliation, CostAttributionPreview, ExpenseReconciliation, ImportExpense, ImportExpenseAllocationBatch, ImportExpenseAllocationPreview, ImportOperation, ImportOperationSummary, ImportReceiptLink, ImportShipment, SaveImportExpenseRequest, SaveImportOperationRequest, SaveImportShipmentRequest, ShipmentLineReceptionSummary, ShipmentReconciliation } from './imports.model';
 
 @Injectable({ providedIn: 'root' })
@@ -9,6 +10,7 @@ export class ImportsService {
   private readonly api = inject(ApiClient);
   listOperations(query: object): Observable<PaginatedResponse<ImportOperation>> { return this.api.get('import-operations', params(query)); }
   getOperation(id: string): Observable<ImportOperation> { return this.api.get(`import-operations/${id}`); }
+  getReceivingSummary(id: string): Observable<ReceivingSummary> { return this.api.get(`import-operations/${id}/receiving`); }
   createOperation(body: SaveImportOperationRequest): Observable<ImportOperation> { return this.api.post('import-operations', body); }
   updateOperation(id: string, body: Partial<SaveImportOperationRequest>): Observable<ImportOperation> { return this.api.patch(`import-operations/${id}`, body); }
   completeOperation(id: string): Observable<ImportOperation> { return this.api.post(`import-operations/${id}/complete`, {}); }

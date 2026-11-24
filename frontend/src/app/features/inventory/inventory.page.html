@@ -73,6 +73,13 @@
   </div>
 </section>
 
+@if (stockByLocation(); as breakdown) {
+  <section class="inventory-panel surface"><h2>Existencias por ubicación</h2>
+    @for (row of breakdown.locations; track row.location.id) { <p>{{ row.location.warehouse.code }}/{{ row.location.code }} · {{ row.location.name }}: <strong>{{ quantity(row.quantity, breakdown.productId) }}</strong></p> }
+    @empty { <p>Sin existencias.</p> }
+  </section>
+}
+
 <nav class="inventory-tabs" aria-label="Secciones de inventario">
   <button type="button" [class.active]="activeTab() === 'movements'" (click)="switchTab('movements')">
     Movimientos <span>{{ movements()?.total ?? 0 }}</span>
@@ -107,16 +114,18 @@
           <option value="INITIAL_BALANCE">Saldo inicial</option>
           <option value="SALE">Venta</option>
           <option value="SALE_CANCELLATION">Anulación de venta</option>
+          <option value="TRANSFER">Transferencia</option>
           <option value="OTHER">Otro</option>
         </select>
       </label>
+      <label class="field"><span>Ubicación</span><select class="input" name="movementLocation" [(ngModel)]="movementLocationId"><option value="">Todas</option>@for (location of locationOptions(); track location.id) { <option [value]="location.id">{{ location.warehouseCode }}/{{ location.code }}</option> }</select></label>
       <label class="field">
         <span>Desde</span>
-        <input class="input" type="date" name="movementDateFrom" [(ngModel)]="movementDateFrom">
+        <app-date-input name="movementDateFrom" [(ngModel)]="movementDateFrom"></app-date-input>
       </label>
       <label class="field">
         <span>Hasta</span>
-        <input class="input" type="date" name="movementDateTo" [(ngModel)]="movementDateTo">
+        <app-date-input name="movementDateTo" [(ngModel)]="movementDateTo"></app-date-input>
       </label>
       <div class="filter-actions">
         <button class="btn btn--ghost" type="submit">Aplicar</button>
@@ -158,6 +167,7 @@
                     {{ movementLabel(movement.movementType) }}
                   </span>
                   <span class="cell-note">{{ originLabel(movement.origin) }}</span>
+                  <span class="cell-note">{{ movement.location ? movement.location.warehouse.code + '/' + movement.location.code : 'Sin ubicación histórica' }}</span>
                 </td>
                 <td>
                   <strong class="quantity"
@@ -342,6 +352,10 @@
           </div>
         }
 
+        <label class="field"><span>Ubicación</span><select class="input" name="movementLocationId" [(ngModel)]="movementForm.locationId"><option value="">Principal / predeterminada</option>@for (location of locationOptions(); track location.id) { <option [value]="location.id">{{ location.warehouseCode }}/{{ location.code }} · {{ location.name }}</option> }</select></label>
+        @if (stockByLocation() && (movementForm.operation === 'EXIT' || movementForm.operation === 'ADJUSTMENT_OUT')) {
+          <p class="form-hint">Disponible en origen: {{ quantity(locationQuantity(movementForm.locationId), movementForm.productId) }}</p>
+        }
         <label class="field">
           <span>Cantidad *</span>
           <input class="input mono" name="quantity" [(ngModel)]="movementForm.quantity" inputmode="decimal" placeholder="0.000" required>

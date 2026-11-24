@@ -22,7 +22,7 @@ export const guestGuard: CanActivateFn = () => {
     map(session => {
       if (!session) return true;
       return router.createUrlTree([
-        session.mustChangePassword ? '/change-password' : session.role === 'ACCOUNTANT' ? '/accounting' : '/dashboard',
+        session.mustChangePassword ? '/change-password' : session.role === 'ACCOUNTANT' ? '/accounting' : session.role === 'PURCHASING' ? '/purchases' : session.role === 'WAREHOUSE' ? '/purchase-receiving' : '/dashboard',
       ]);
     }),
   );
@@ -49,7 +49,7 @@ export const requiredPasswordChangeGuard: CanActivateFn = () => {
   return auth.ensureSession().pipe(
     map(session => {
       if (!session) return router.createUrlTree(['/login']);
-      return session.mustChangePassword || router.createUrlTree([session.role === 'ACCOUNTANT' ? '/accounting' : '/dashboard']);
+      return session.mustChangePassword || router.createUrlTree([session.role === 'ACCOUNTANT' ? '/accounting' : session.role === 'PURCHASING' ? '/purchases' : session.role === 'WAREHOUSE' ? '/purchase-receiving' : '/dashboard']);
     }),
   );
 };

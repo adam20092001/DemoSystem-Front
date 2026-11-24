@@ -9,27 +9,8 @@ import { ApiRequestError } from '../../core/errors/api-request.error';
   selector: 'app-login',
   template: `
     <main class="login">
-      <section class="promo">
-        <a class="brand" href="#">
-          <span>Sistema de Gestion</span>
-        </a>
-        <div class="promo-body">
-          <p class="promo-kicker">Plataforma de gestión empresarial</p>
-          <h1>Control sencillo para tu negocio.</h1>
-          <p class="lead">Ventas, compras, inventario y reportes en un solo lugar.</p>
-        </div>
-        <ul class="module-list">
-          <li>Catálogo y productos</li>
-          <li>Inventario y movimientos</li>
-          <li>Cotizaciones y ventas</li>
-          <li>Pagos y cuentas por cobrar</li>
-          <li>Reportes gerenciales</li>
-        </ul>
-      </section>
-
       <section class="access">
-        <form (submit)="onSubmit($event, usernameInput.value, passwordInput.value)">
-          <h2>Ingresa a tu cuenta</h2>
+        <form aria-label="Iniciar sesión" (submit)="onSubmit($event, usernameInput.value, passwordInput.value)">
 
           @if (error()) {
             <p class="error-banner" role="alert">{{ error() }}</p>
@@ -82,7 +63,7 @@ export class LoginPage {
     ).subscribe({
       next: session => {
         this.router.navigateByUrl(
-          session.mustChangePassword ? '/change-password' : '/dashboard',
+          session.mustChangePassword ? '/change-password' : session.role === 'ACCOUNTANT' ? '/accounting' : session.role === 'PURCHASING' ? '/purchases' : session.role === 'WAREHOUSE' ? '/purchase-receiving' : '/dashboard',
         );
       },
       error: (error: unknown) => {

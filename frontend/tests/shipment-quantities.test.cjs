@@ -1,0 +1,23 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
+const ts = require('typescript');
+const moduleUnderTest = { exports: {} };
+const js = ts.transpileModule(readFileSync(require('node:path').resolve(__dirname, '../src/app/features/imports/shipment-quantity.util.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+new Function('exports', 'module', js)(moduleUnderTest.exports, moduleUnderTest);
+const { shipmentQuantityLimit: limit, shipmentQuantityError: error, shipmentLineIsLocked: locked } = moduleUnderTest.exports;
+const invoice = (available = '4') => [{ purchaseInvoiceLineId: 'invoice-line', availableQuantity: available }];
+const line = quantity => ({ purchaseInvoiceLineId: 'invoice-line', plannedQuantity: quantity });
+
+test('creación usa saldo global de factura, no cantidad total comprada', () => { assert.equal(limit(invoice(), [line('4')], [], 0), '4.000'); assert.ok(error(invoice(), [line('5')], [], 0)); });
+test('dos filas del mismo producto comparten un único saldo', () => { const rows = [line('3'), line('2')]; assert.equal(limit(invoice(), rows, [], 0), '2.000'); assert.ok(error(invoice(), rows, [], 0)); assert.ok(error(invoice(), rows, [], 1)); });
+test('varias filas válidas suman exactamente el saldo', () => { const rows = [line('1.250'), line('2.750')]; assert.equal(error(invoice(), rows, [], 0), null); assert.equal(error(invoice(), rows, [], 1), null); });
+test('editar devuelve la asignación original sin contarla dos veces', () => { const original = [line('6')], rows = [line('10')]; assert.equal(limit(invoice(), rows, original, 0), '10.000'); assert.equal(error(invoice(), rows, original, 0), null); assert.ok(error(invoice(), [line('11')], original, 0)); });
+test('editar con filas repetidas devuelve cada asignación original solo una vez', () => { const rows = [line('5'), line('6')]; assert.equal(limit(invoice('0'), rows, [line('3'), line('7')], 0), '4.000'); assert.ok(error(invoice('0'), rows, [line('3'), line('7')], 0)); });
+test('cantidad totalmente asignada impide otro embarque', () => { assert.equal(limit(invoice('0'), [line('1')], [], 0), '0.000'); assert.ok(error(invoice('0'), [line('1')], [], 0)); });
+test('cantidades no válidas y más de tres decimales no se aceptan', () => { for (const value of ['', '-1', '0', 'NaN', '1.2345']) assert.ok(error(invoice(), [line(value)], [], 0)); });
+test('líneas de factura diferentes no consumen el mismo saldo', () => { const rows = [line('4'), { purchaseInvoiceLineId: 'other', plannedQuantity: '100' }]; assert.equal(limit(invoice(), rows, [], 0), '4.000'); });
+test('históricas sin vínculo no inventan un límite de factura', () => assert.equal(limit(null, [{ plannedQuantity: '1' }], [], 0), null));
+test('línea persistida que agotó factura queda bloqueada', () => assert.equal(locked(invoice('0'), [line('1')], line('1')), true));
+test('saldo pendiente permite corregir una línea de embarque planificado', () => assert.equal(locked(invoice('4'), [line('1')], line('1')), false));
+test('borrador no guardado no se bloquea al completar la cantidad en pantalla', () => assert.equal(locked(invoice('1'), [], line('1')), false));

@@ -1,0 +1,28 @@
+<section class="documents">
+  <div class="documents-head"><h3>Documentos de la compra</h3>@if (canWrite()) { <label class="btn btn--ghost file-picker">{{ uploading() ? 'Subiendo…' : '＋ Adjuntar factura' }}<input type="file" multiple accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" (change)="selectFiles($event)" [disabled]="uploading()"></label> }</div>
+  @if (canWrite()) { <small class="muted">PDF, JPG o PNG · hasta 10 MB por archivo{{ invoiceStatus() === 'CONFIRMED' ? ' · Solo documentos complementarios' : '' }}</small> }
+  @if (error()) { <div class="notice notice--error" role="alert">{{ error() }}</div> }
+  @if (loading()) { <p class="muted" role="status">Cargando documentos…</p> }
+  @for (item of queue(); track item.key) { @if (item.status !== 'done') { <div class="upload-row"><span>{{ item.file.name }}</span><small>{{ statusLabel(item.status) }}</small>@if (item.status === 'failed') { <button class="btn btn--quiet" type="button" [disabled]="uploading()" (click)="discard(item.key)">Quitar de pendientes</button> }</div> } }
+  @if (hasFailures()) { <button class="btn btn--ghost" type="button" [disabled]="uploading()" (click)="upload()">Reintentar archivos pendientes</button> }
+  <div class="document-list">@for (document of documents(); track document.id) {
+    <article class="document-row"><div class="document-info"><strong>{{ document.fileName }}</strong><small>{{ document.mimeType === 'application/pdf' ? 'PDF' : 'Imagen' }} · {{ size(document.fileSize) }} · {{ formatDate(document.uploadedAt) }}</small></div><div class="document-actions">
+      @if (document.previewable) { <button class="btn btn--quiet" type="button" [disabled]="busy()" (click)="preview(document)">Ver</button> }
+      <button class="btn btn--quiet" type="button" [disabled]="busy()" (click)="download(document)">Descargar</button>
+      @if (canWrite() && document.canDelete && invoiceStatus() === 'DRAFT') { <button class="btn btn--quiet" type="button" [disabled]="busy() || uploading()" (click)="remove(document)">Retirar</button> }
+    </div></article>
+  } @empty { @if (!loading()) { <p class="muted">No hay documentos adjuntos.</p><button class="btn btn--quiet" type="button" (click)="load()">Actualizar documentos</button> } }</div>
+</section>
+@if (pendingRemoval(); as document) {
+  <div class="document-preview-backdrop"><section class="dialog dialog--small" role="dialog" aria-modal="true" aria-label="Retirar documento">
+    <header class="dialog__head"><h2>Retirar documento</h2></header>
+    <div class="dialog__body"><p>¿Retirar «{{ document.fileName }}» de esta compra?</p>@if (error()) { <div class="notice notice--error" role="alert">{{ error() }}</div> }</div>
+    <footer class="dialog__foot"><button class="btn btn--ghost" type="button" [disabled]="busy()" (click)="pendingRemoval.set(null)">Cancelar</button><button class="btn btn--primary" type="button" [disabled]="busy() || uploading()" (click)="confirmRemoval()">{{ busy() ? 'Procesando…' : 'Retirar documento' }}</button></footer>
+  </section></div>
+}
+@if (previewDocument(); as document) {
+  <div class="document-preview-backdrop" (keydown.escape)="closePreview()"><section class="document-preview" role="dialog" aria-modal="true" aria-label="Vista previa del documento">
+    <header><strong>{{ document.fileName }}</strong><button class="btn btn--ghost" type="button" (click)="closePreview()">Cerrar</button></header>
+    @if (document.mimeType === 'application/pdf' && previewBlob(); as blob) { <app-pdf-preview [blob]="blob" /> } @else { <div class="image-preview"><img [src]="previewUrl()" [alt]="document.fileName"></div> }
+  </section></div>
+}

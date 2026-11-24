@@ -1,0 +1,17 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
+const ts = require('typescript');
+const target = { exports: {} };
+const js = ts.transpileModule(readFileSync(require('node:path').resolve(__dirname, '../src/app/features/imports/import-purchase-eligibility.util.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+new Function('exports', 'module', js)(target.exports, target);
+const { purchaseCanStartImport: allowed } = target.exports;
+const invoice = { id: 'invoice', status: 'CONFIRMED', lines: [{ id: 'line', isReceiptEligible: true }] };
+const receipts = pending => ({ purchaseInvoiceId: 'invoice', lines: [{ purchaseInvoiceLineId: 'line', pendingQuantity: pending }] });
+test('compra totalmente recibida no admite nueva importación', () => assert.equal(allowed(invoice, receipts('0')), false));
+test('compra totalmente asignada tampoco admite nueva importación aunque no se haya recibido', () => assert.equal(allowed(invoice, receipts('5'), [{ purchaseInvoiceLineId: 'line', availableQuantity: '0' }]), false));
+test('compra con saldo físico y cantidad disponible admite otra importación', () => assert.equal(allowed(invoice, receipts('5'), [{ purchaseInvoiceLineId: 'line', availableQuantity: '2' }]), true));
+test('saldo debe corresponder al mismo producto que tiene disponibilidad', () => { const current = { ...invoice, lines: [...invoice.lines, { id: 'other', isReceiptEligible: true }] }; assert.equal(allowed(current, receipts('5'), [{ purchaseInvoiceLineId: 'other', availableQuantity: '2' }]), false); });
+test('compra anulada o resumen no verificado no se ofrece', () => { assert.equal(allowed({ ...invoice, status: 'CANCELLED' }, receipts('5')), false); assert.equal(allowed(invoice, null), false); assert.equal(allowed(invoice, { ...receipts('5'), purchaseInvoiceId: 'other' }), false); });
+test('se conserva creación de compra borrador desde importaciones sin confirmarla automáticamente', () => assert.equal(allowed({ ...invoice, status: 'DRAFT' }, null), true));
+test('sin productos inventariables no se ofrece una compra confirmada', () => assert.equal(allowed({ ...invoice, lines: [{ id: 'line', isReceiptEligible: false }] }, receipts('5')), false));

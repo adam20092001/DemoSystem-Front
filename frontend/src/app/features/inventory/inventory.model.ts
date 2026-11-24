@@ -9,6 +9,7 @@ export type InventoryMovementOrigin =
   | 'INITIAL_BALANCE'
   | 'SALE'
   | 'SALE_CANCELLATION'
+  | 'TRANSFER'
   | 'OTHER';
 
 export type InventoryOperation = 'INITIAL_BALANCE' | InventoryMovementType;
@@ -38,6 +39,8 @@ export interface InventoryMovement {
   notes: string | null;
   createdBy: InventoryMovementCreatedBy;
   createdAt: string;
+  location?: { id: string; code: string; name: string; warehouse: { id: string; code: string } } | null;
+  transferId?: string | null;
 }
 
 export interface ProductStock {
@@ -78,6 +81,7 @@ export interface ListMovementsQuery {
   dateFrom?: string;
   dateTo?: string;
   search?: string;
+  locationId?: string;
 }
 
 export interface ListLowStockQuery {
@@ -95,4 +99,5 @@ export interface RegisterInventoryMovementRequest {
   quantity: string;
   reason: string;
   notes?: string;
+  locationId?: string;
 }

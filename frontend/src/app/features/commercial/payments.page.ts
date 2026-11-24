@@ -1,3 +1,5 @@
+import { MoneyInputDirective } from '../../shared/money-input.directive';
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -22,7 +24,7 @@ type PaymentsTab = 'payments' | 'receivables';
 
 @Component({
   selector: 'app-payments',
-  imports: [FormsModule],
+  imports: [MoneyInputDirective, DateInputComponent, FormsModule],
   templateUrl: './payments.page.html',
   styleUrl: './commercial-page.shared.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -3,7 +3,10 @@
 .compact-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .document-number { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 700; }
 .lines-editor { display: grid; gap: 10px; }
-.purchase-line { display: grid; grid-template-columns: 1.3fr repeat(4, minmax(110px, .65fr)) 36px; gap: 8px; align-items: end; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.purchase-line { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.purchase-line > *, .compact-grid > * { min-width: 0; }
+.inline-create { padding: 0; margin: 0 0 6px; border: 0; background: transparent; color: var(--brand-ink); font-size: 11px; cursor: pointer; text-align: left; }
+.inline-create:hover { text-decoration: underline; }
 .purchase-line .description { grid-column: span 2; }
 .financial-highlight { font-weight: 750; font-size: 15px; }
 .overdue { color: var(--danger-ink); font-weight: 650; }

@@ -54,6 +54,9 @@ export interface PurchaseInvoiceLineRequest {
 }
 
 export interface SavePurchaseInvoiceRequest {
+  currencyCode?: string;
+  exchangeRate?: string;
+  exchangeRateDate?: string;
   supplierId: string;
   documentType: PurchaseInvoiceDocumentType;
   documentSeries?: string;
@@ -67,6 +70,11 @@ export interface SavePurchaseInvoiceRequest {
 }
 
 export interface PurchaseInvoiceLine extends PurchaseInvoiceLineRequest {
+  baseUnitCost: string;
+  baseTaxableBaseAmount: string;
+  baseTaxAmount: string;
+  baseCreditableTaxAmount: string;
+  baseLineTotal: string;
   id: string;
   descriptionSnapshot: string;
   unitCodeSnapshot: string | null;
@@ -80,6 +88,12 @@ export interface PurchaseInvoiceLine extends PurchaseInvoiceLineRequest {
 }
 
 export interface PurchaseInvoice {
+  baseCurrencyCode: string;
+  exchangeRate: string;
+  exchangeRateDate: string;
+  baseSubtotal: string;
+  baseTaxAmount: string;
+  baseTotalAmount: string;
   id: string;
   supplierId: string;
   documentType: PurchaseInvoiceDocumentType;
@@ -109,7 +123,8 @@ export interface PurchaseReceiptLine {
   id: string;
   purchaseInvoiceLineId: string;
   quantity: string;
-  reclassifiedAmount: string | null;
+  location?: { id: string; code: string; name: string; warehouse: { id: string; code: string } } | null;
+  reclassifiedAmount?: string | null;
 }
 
 export interface PurchaseReceipt {
@@ -137,10 +152,44 @@ export interface PurchaseReceiptsSummary {
   lines: ReceiptLineSummary[];
 }
 
+export interface ReceivableInvoice {
+  id: string;
+  documentType: PurchaseInvoiceDocumentType;
+  documentSeries: string | null;
+  documentNumber: string;
+  issueDate: string;
+  supplier: { id: string; legalName: string; tradeName: string | null };
+  pendingLinesCount: number;
+}
+
+export interface ReceivableInvoiceLine {
+  purchaseInvoiceLineId: string;
+  productId: string;
+  productSku: string;
+  productName: string;
+  unitCode: string | null;
+  unitName: string | null;
+  invoicedQuantity: string;
+  receivedQuantity: string;
+  pendingQuantity: string;
+  status: 'PENDING' | 'PARTIAL' | 'COMPLETE';
+}
+
+export interface ReceivableInvoiceDetail extends ReceivableInvoice {
+  status: PurchaseInvoiceStatus;
+  lines: ReceivableInvoiceLine[];
+}
+
 export type PayableStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
 export type AgingBucket = 'NOT_OVERDUE' | 'OVERDUE_1_30' | 'OVERDUE_31_60' | 'OVERDUE_61_90' | 'OVERDUE_90_PLUS' | 'NO_DUE_DATE';
 
 export interface AccountPayable {
+  baseCurrencyCode: string;
+  exchangeRate: string;
+  exchangeRateDate: string;
+  baseOriginalAmount: string;
+  basePaidAmount: string;
+  baseBalanceDue: string;
   purchaseInvoiceId: string;
   supplierId: string;
   supplierLegalName: string;
@@ -160,11 +209,15 @@ export interface AccountPayable {
 }
 
 export interface PayablesSummary {
+  baseCurrencyCode: string | null;
+  byCurrency: Array<{ currencyCode: string; invoiceCount: number; totalOriginal: string; totalPaid: string; totalPending: string; baseTotalPending: string }>;
   bySupplier: Array<{ supplierId: string; supplierLegalName: string; supplierDocumentNumber: string; invoiceCount: number; totalOriginal: string; totalPaid: string; totalPending: string }>;
   grandTotal: { invoiceCount: number; totalOriginal: string; totalPaid: string; totalPending: string };
 }
 
 export interface AgingReport {
+  baseCurrencyCode: string | null;
+  byCurrency: Array<{ currencyCode: string; totalPending: string; baseTotalPending: string }>;
   asOfDate: string;
   totals: { totalPending: string; buckets: AgingBucketAmount[] };
   bySupplier: Array<{ supplierId: string; supplierLegalName: string; supplierDocumentNumber: string; totalPending: string; buckets: AgingBucketAmount[] }>;
@@ -174,6 +227,11 @@ export interface AgingReport {
 export interface AgingBucketAmount { bucket: AgingBucket; invoiceCount: number; amount: string; percentage: string }
 
 export interface SupplierPayment {
+  baseCurrencyCode: string;
+  exchangeRate: string;
+  exchangeRateDate: string;
+  baseAmount: string;
+  fxDifferenceAmount: string;
   id: string;
   supplierId: string;
   paymentDate: string;
@@ -189,6 +247,7 @@ export interface SupplierPayment {
 }
 
 export interface ReconciliationReport {
+  baseCurrencyCode: string | null;
   generatedAt: string;
   overallConsistent: boolean;
   invoices: Array<{ purchaseInvoiceId: string; supplierId: string; originalAmount: string; operationalPaidAmount: string; operationalPendingBalance: string; discrepancies: string[] }>;

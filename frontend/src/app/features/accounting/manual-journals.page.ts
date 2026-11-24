@@ -1,3 +1,5 @@
+import { MoneyInputDirective } from '../../shared/money-input.directive';
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +10,7 @@ import { shortDate, money, requestErrorMessage } from '../commercial/commercial.
 import { AccountingAccount, ManualJournalDraft, ManualJournalLine } from './accounting.model';
 import { AccountingService } from './accounting.service';
 
-@Component({ selector: 'app-manual-journals', imports: [FormsModule], templateUrl: './manual-journals.page.html', styleUrls: ['../commercial/commercial-page.shared.scss', './accounting.page.scss'], changeDetection: ChangeDetectionStrategy.OnPush })
+@Component({ selector: 'app-manual-journals', imports: [MoneyInputDirective, DateInputComponent, FormsModule], templateUrl: './manual-journals.page.html', styleUrls: ['../commercial/commercial-page.shared.scss', './accounting.page.scss'], changeDetection: ChangeDetectionStrategy.OnPush })
 export class ManualJournalsPage implements OnInit {
   private readonly api = inject(AccountingService); protected readonly auth = inject(AuthService);
   protected readonly canWrite = computed(() => ['ADMIN', 'ACCOUNTANT'].includes(this.auth.role()));

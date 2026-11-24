@@ -59,6 +59,8 @@ textarea.input { height: auto; min-height: 86px; padding-top: 11px; resize: vert
 .pagination__actions { display: flex; align-items: center; gap: 8px; }
 
 .backdrop { position: fixed; inset: 0; z-index: var(--z-backdrop); display: grid; place-items: center; padding: 20px; background: oklch(0.18 0.02 250 / .58); }
+/* Keep nested editors above the inert detail, including with Angular's scoped styles. */
+.backdrop.editor-overlay { z-index: calc(var(--z-backdrop) + 5); }
 .dialog { width: min(720px, 100%); max-height: min(90vh, 880px); overflow: auto; background: var(--surface); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); }
 .dialog--wide { width: min(980px, 100%); }
 .dialog--small { width: min(480px, 100%); }

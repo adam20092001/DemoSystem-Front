@@ -1,3 +1,4 @@
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +9,7 @@ import { AccountingAccount, JournalReport, LedgerReport, TrialBalance } from './
 import { AccountingService } from './accounting.service';
 
 type ReportTab = 'journal' | 'ledger' | 'trial-balance';
-@Component({ selector: 'app-accounting-reports', imports: [FormsModule], templateUrl: './accounting-reports.page.html', styleUrls: ['../commercial/commercial-page.shared.scss', './accounting.page.scss'], changeDetection: ChangeDetectionStrategy.OnPush })
+@Component({ selector: 'app-accounting-reports', imports: [DateInputComponent, FormsModule], templateUrl: './accounting-reports.page.html', styleUrls: ['../commercial/commercial-page.shared.scss', './accounting.page.scss'], changeDetection: ChangeDetectionStrategy.OnPush })
 export class AccountingReportsPage implements OnInit {
   private readonly api = inject(AccountingService); protected readonly tab = signal<ReportTab>('journal'); protected readonly accounts = signal<AccountingAccount[]>([]); protected readonly journal = signal<JournalReport | null>(null); protected readonly ledger = signal<LedgerReport | null>(null); protected readonly trial = signal<TrialBalance | null>(null); protected readonly loading = signal(false); protected readonly exporting = signal(false); protected readonly error = visibleErrorSignal();
   protected dateFrom = firstDay(); protected dateTo = today(); protected accountId = '';

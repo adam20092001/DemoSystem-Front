@@ -1,3 +1,5 @@
+import { MoneyInputDirective } from '../../shared/money-input.directive';
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -32,7 +34,7 @@ type SaleAction = 'cancel' | 'mark-delivered' | 'mark-observed';
 
 @Component({
   selector: 'app-sales',
-  imports: [FormsModule],
+  imports: [MoneyInputDirective, DateInputComponent, FormsModule],
   templateUrl: './sales.page.html',
   styleUrl: './commercial-page.shared.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

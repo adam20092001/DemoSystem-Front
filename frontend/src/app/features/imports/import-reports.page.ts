@@ -1,3 +1,4 @@
+import { CurrencySelectComponent } from '../../shared/currency-select.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +12,7 @@ type ReportTab = 'operations' | 'shipments' | 'expenses' | 'reconciliation';
 
 @Component({
   selector: 'app-import-reports',
-  imports: [FormsModule],
+  imports: [CurrencySelectComponent, FormsModule],
   templateUrl: './import-reports.page.html',
   styleUrls: ['../commercial/commercial-page.shared.scss', './import-reports.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

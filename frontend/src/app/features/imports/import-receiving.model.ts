@@ -1,0 +1,11 @@
+import type { ImportOperation, ImportReceiptLink, ImportShipmentStatus } from './imports.model';
+import type { PurchaseReceipt } from '../procurement/procurement.model';
+export interface ReceivingCandidate { purchaseReceiptLineId: string; purchaseReceiptId: string; receivedDate: string; receivedQuantity: string; linkedElsewhereQuantity: string; availableToLinkQuantity: string }
+export interface ReceivingLine { importShipmentLineId: string; productId: string | null; sku: string | null; description: string; unitCode: string | null; purchaseInvoiceLineId: string | null; isReceivable: boolean; invoicedQuantity: string | null; assignedToShipmentsQuantity: string | null; receivedQuantity: string | null; shipmentLineQuantity: string; linkedQuantity: string; pendingQuantity: string; invoicePendingReceivableQuantity: string | null; maxReceivableNow: string; candidateReceiptLines: ReceivingCandidate[] }
+export interface ReceivingShipment { importShipmentId: string; status: ImportShipmentStatus; canReceive: boolean; lines: ReceivingLine[] }
+export interface ReceivingSummary { importOperationId: string; reference: string; status: string; purchaseInvoiceId: string | null; purchaseInvoiceStatus: string | null; isLegacyUnlinked: boolean; canReceive: boolean; cannotReceiveReason: string | null; pendingQuantityTotal: string; canComplete: boolean; cannotCompleteReason: string | null; shipments: ReceivingShipment[] }
+export interface ReceiveImportRequest { receivedDate?: string; notes?: string; lines: Array<{ importShipmentLineId: string; quantity: string; locationId?: string }>; completeOperation: boolean }
+export interface LinkImportRequest { links: Array<{ importShipmentLineId: string; purchaseReceiptLineId: string; linkedQuantity: string }>; completeOperation: boolean }
+export interface ReceivingResult { requestId: string; idempotentReplay: boolean; mode: 'RECEIVE' | 'LINK_EXISTING'; receipt: PurchaseReceipt | null; links: ImportReceiptLink[]; operationCompleted: boolean; operation: ImportOperation }
+export interface PendingReceiving { shipmentId: string; mode: 'receive' | 'link-receipts'; key: string; body: ReceiveImportRequest | LinkImportRequest }
+export interface ReceivingFormRow { source: ReceivingLine; quantity: string; locationId: string; receiptLineId: string; submittedIndex: number }

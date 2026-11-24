@@ -1,3 +1,5 @@
+import { MoneyInputDirective } from '../../shared/money-input.directive';
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -21,6 +23,7 @@ import {
   UpdateQuoteRequest,
 } from './commercial.model';
 import { CommercialService } from './commercial.service';
+import { LocationOption, LocationsService } from '../inventory/locations.service';
 import {
   money,
   quantity,
@@ -39,7 +42,7 @@ type QuoteAction = 'accept' | 'reject';
 
 @Component({
   selector: 'app-quotes',
-  imports: [FormsModule],
+  imports: [MoneyInputDirective, DateInputComponent, FormsModule],
   templateUrl: './quotes.page.html',
   styleUrls: ['./commercial-page.shared.scss', './quotes.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +52,9 @@ export class QuotesPage implements OnInit {
   protected readonly commercial = inject(CommercialService);
   private readonly catalog = inject(CatalogService);
   private readonly paymentMethodsService = inject(PaymentMethodsService);
+  private readonly locationsApi = inject(LocationsService);
+  protected readonly locationOptions = signal<LocationOption[]>([]);
+  protected conversionLocations: Record<string, string> = {};
 
   protected readonly canWrite = computed(() => ['ADMIN', 'SELLER'].includes(this.auth.role()));
   protected readonly result = signal<PaginatedResponse<QuoteListItem> | null>(null);
@@ -72,7 +78,7 @@ export class QuotesPage implements OnInit {
   protected readonly editing = signal<QuoteDetail | null>(null);
   protected readonly detail = signal<QuoteDetail | null>(null);
   protected readonly pendingAction = signal<{ action: QuoteAction; quote: QuoteListItem | QuoteDetail } | null>(null);
-  protected readonly convertQuote = signal<QuoteListItem | QuoteDetail | null>(null);
+  protected readonly convertQuote = signal<QuoteDetail | null>(null);
   protected readonly createdSale = signal<SaleDetail | null>(null);
 
   protected readonly statuses: QuoteStatus[] = ['PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CONVERTED'];
@@ -94,6 +100,7 @@ export class QuotesPage implements OnInit {
     this.loadLookups();
     this.loadPaymentMethods();
     this.loadQuotes();
+    if (this.canWrite()) this.locationsApi.activeLocations().pipe(take(1)).subscribe({ next: value => this.locationOptions.set(value), error: error => this.error.set(requestErrorMessage(error)) });
   }
 
   protected applyFilters(event: Event): void { event.preventDefault(); this.loadQuotes(1); }
@@ -225,7 +232,9 @@ export class QuotesPage implements OnInit {
   }
 
   protected openConversion(quote: QuoteListItem | QuoteDetail): void {
-    this.convertQuote.set(quote);
+    this.convertQuote.set(null);
+    this.conversionLocations = {};
+    this.commercial.getQuote(quote.id).pipe(take(1)).subscribe({ next: detail => this.convertQuote.set(detail), error: error => this.error.set(requestErrorMessage(error)) });
     this.conversionPaymentEnabled = false;
     this.conversionPayments = [];
     this.error.set(null);
@@ -247,7 +256,8 @@ export class QuotesPage implements OnInit {
       payments = this.conversionPayments.map(line => ({ method: line.method, amount: line.amount.trim(), ...(line.reference.trim() ? { reference: line.reference.trim() } : {}) }));
     }
     this.actionLoading.set(true);
-    this.commercial.createSaleFromQuote(quote.id, payments).pipe(take(1), finalize(() => this.actionLoading.set(false))).subscribe({
+    const locations = quote.items.filter(item => item.stockInfo && this.conversionLocations[item.productId]).map(item => ({ productId: item.productId, locationId: this.conversionLocations[item.productId] }));
+    this.commercial.createSaleFromQuote(quote.id, payments, locations).pipe(take(1), finalize(() => this.actionLoading.set(false))).subscribe({
       next: sale => {
         this.convertQuote.set(null);
         this.detail.set(null);

@@ -1,0 +1,48 @@
+<section class="receiving-section">
+  <div class="receiving-head"><h3>Recepción de mercadería</h3><button class="btn btn--quiet" type="button" [disabled]="loading() || saving()" (click)="load()">Actualizar</button></div>
+  @if (error()) { <div class="notice notice--error" role="alert">{{ error() }}</div> }
+  @if (notice()) { <div class="notice notice--ok" role="status">{{ notice() }}</div> }
+  @if (pending() && canWrite()) { <div class="pending-request"><span>Hay un envío pendiente de confirmar. Reinténtalo para consultar su resultado sin duplicar la recepción.</span><button class="btn btn--primary" type="button" [disabled]="saving()" (click)="retry()">Reintentar envío pendiente</button></div> }
+  @if (loading() && !summary()) { <p class="muted">Cargando pendientes de recepción…</p> }
+  @if (summary(); as info) {
+    @if (!info.canReceive) { <p class="muted">{{ blockReason(info) }}</p> }
+    @if (canWrite() && info.canComplete && !pending() && !loading() && !blocked()) { <button class="btn btn--primary" type="button" [disabled]="saving()" (click)="completeRequested.emit()">Completar importación recibida</button> }
+    @for (shipment of info.shipments; track shipment.importShipmentId) {
+      <article class="receiving-card"><header><div><strong>Embarque · {{ statusLabel(shipment.status) }}</strong><span class="badge" [class.badge--ok]="receptionState(shipment) === 'Recepción completa'">{{ receptionState(shipment) }}</span></div><div class="receiving-actions">
+        @if (canWrite() && shipment.canReceive && !pending() && !loading() && !blocked()) {
+          @if (hasReceivable(shipment)) { <button class="btn btn--primary" type="button" [disabled]="saving()" (click)="open(shipment, 'receive')">{{ receptionState(shipment) === 'Recepción parcial' ? 'Recibir saldo pendiente' : 'Recibir mercadería' }}</button> }
+          @if (hasCandidates(shipment)) { <button class="btn btn--ghost" type="button" [disabled]="saving()" (click)="open(shipment, 'link-receipts')">Vincular recepción existente</button> }
+        }
+      </div></header>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>Producto</th><th>Embarcado</th><th>Vinculado</th><th>Pendiente del embarque</th><th>Pendiente de la factura</th><th>Recibible ahora</th></tr></thead><tbody>
+        @for (line of shipment.lines; track line.importShipmentLineId) { <tr><td>{{ line.description }}<small class="block muted">{{ line.sku || '' }} · {{ line.unitCode || '' }}</small></td><td>{{ qty(line.shipmentLineQuantity) }}</td><td>{{ qty(line.linkedQuantity) }}</td><td>{{ qty(line.pendingQuantity) }}</td><td>{{ qty(line.invoicePendingReceivableQuantity) }}</td><td><strong>{{ line.isReceivable ? qty(line.maxReceivableNow) : 'No inventariable' }}</strong></td></tr> }
+      </tbody></table></div>
+    </article>
+    } @empty { <p class="muted">No hay embarques para recibir.</p> }
+  }
+</section>
+@if (modal(); as shipment) {
+  <div class="receiving-backdrop"><section class="dialog dialog--wide" role="dialog" aria-modal="true" aria-label="Recepción de la importación" data-validation-scope>
+    <header class="dialog__head"><div><p class="eyebrow">{{ operation().reference }}</p><h2>{{ mode() === 'receive' ? 'Recibir mercadería' : 'Vincular recepción existente' }}</h2></div><button class="dialog__close" type="button" [disabled]="saving()" (click)="close()" aria-label="Cerrar recepción">×</button></header>
+    <div class="dialog__body">
+      @if (error()) { <div class="notice notice--error" role="alert">{{ error() }}</div> }
+      @if (pending()) { <p class="pending-request">Hay un envío pendiente: el reintento conserva sus cantidades y ubicación originales.</p> }
+      @if (mode() === 'receive') { <div class="form-grid"><label class="field"><span>Fecha de recepción *</span><app-date-input required [min]="earliestReceptionDate()" [(ngModel)]="receivedDate" data-api-field="receivedDate" [disabled]="saving() || !!pending()"></app-date-input></label><label class="field"><span>Notas</span><input class="input" maxlength="500" [(ngModel)]="notes" data-api-field="notes" [disabled]="saving() || !!pending()"></label></div> }
+      @if (mode() === 'link-receipts') { <p class="muted">Esta acción vincula lo ya recibido; no vuelve a aumentar el inventario.</p> }
+      <div class="receiving-rows">@for (row of rows; track row.source.importShipmentLineId) {
+        <article class="receiving-row"><div class="row-title"><strong>{{ row.source.description }}</strong><small>Pendiente del embarque: {{ qty(row.source.pendingQuantity) }} {{ row.source.unitCode || '' }} · Recibible ahora: {{ qty(row.source.maxReceivableNow) }}</small></div>
+          @if (mode() === 'receive') {
+            <label class="field"><span>Cantidad a recibir</span><input class="input" type="number" min="0" step="0.001" inputmode="decimal" [max]="mode() === 'receive' ? row.source.maxReceivableNow : row.source.pendingQuantity" [ngModel]="row.quantity" (ngModelChange)="row.quantity = $event === null ? '' : $event.toString()" [attr.data-api-field]="'lines[' + row.submittedIndex + '].quantity'" [disabled]="saving() || !!pending() || +row.source.maxReceivableNow <= 0"></label>
+            <label class="field"><span>Almacén / ubicación</span><select class="input" [(ngModel)]="row.locationId" (ngModelChange)="locationChanged(row)" [attr.data-api-field]="'lines[' + row.submittedIndex + '].locationId'" [disabled]="saving() || !!pending()"><option value="">Principal / predeterminada</option>@for (location of locations(); track location.id) { <option [value]="location.id">{{ location.warehouseCode }} / {{ location.code }} · {{ location.name }}</option> }</select></label>
+          } @else {
+            <label class="field"><span>Recepción registrada</span><select class="input" [(ngModel)]="row.receiptLineId" [required]="+row.quantity > 0" [attr.data-api-field]="'links[' + row.submittedIndex + '].purchaseReceiptLineId'" [disabled]="saving() || !!pending()"><option value="">Seleccionar recepción</option>@for (receipt of row.source.candidateReceiptLines; track receipt.purchaseReceiptLineId) { <option [value]="receipt.purchaseReceiptLineId">{{ formatDate(receipt.receivedDate) }} · disponible {{ qty(receipt.availableToLinkQuantity) }}</option> }</select></label>
+            <label class="field"><span>Cantidad a vincular</span><input class="input" type="number" min="0" step="0.001" inputmode="decimal" [max]="mode() === 'receive' ? row.source.maxReceivableNow : row.source.pendingQuantity" [ngModel]="row.quantity" (ngModelChange)="row.quantity = $event === null ? '' : $event.toString()" [attr.data-api-field]="'links[' + row.submittedIndex + '].linkedQuantity'" [disabled]="saving() || !!pending()"></label>
+          }
+        </article>
+      }</div>
+      <label class="complete-choice"><input type="checkbox" [(ngModel)]="completeOperation" [disabled]="saving() || !!pending() || !canRequestCompletion()"><span>{{ mode() === 'receive' ? 'Recibir y completar importación' : 'Vincular y completar importación' }}</span></label>
+      @if (completionReason(); as reason) { <small class="muted">{{ reason }}</small> }
+    </div>
+    <footer class="dialog__foot"><button class="btn btn--ghost" type="button" [disabled]="saving()" (click)="close()">Cancelar</button><button class="btn btn--primary" type="button" [disabled]="saving() || loading() || blocked()" (click)="submit()">{{ saving() ? 'Procesando…' : pending() ? 'Reintentar envío pendiente' : mode() === 'receive' ? 'Registrar recepción' : 'Vincular recepción' }}</button></footer>
+  </section></div>
+}

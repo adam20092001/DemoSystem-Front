@@ -1,5 +1,6 @@
+import { MoneyInputDirective } from '../../shared/money-input.directive';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Observable, finalize, forkJoin, of, switchMap, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
@@ -63,12 +64,16 @@ interface SpecificationForm {
 
 @Component({
   selector: 'app-catalog',
-  imports: [FormsModule],
+  imports: [MoneyInputDirective, FormsModule],
   templateUrl: './catalog.page.html',
   styleUrl: './catalog.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CatalogPage implements OnInit {
+  readonly createOnly = input(false);
+  readonly created = output<string>();
+  readonly dismissed = output<void>();
+  private savedProductId: string | null = null;
   protected readonly auth = inject(AuthService);
   protected readonly catalog = inject(CatalogService);
 
@@ -130,6 +135,7 @@ export class CatalogPage implements OnInit {
 
   ngOnInit(): void {
     this.loadLookups();
+    if (this.createOnly()) { this.openCreateProduct(); return; }
     this.loadProducts();
     this.loadCategories();
     this.loadUnits();
@@ -256,6 +262,8 @@ export class CatalogPage implements OnInit {
 
   protected closeProductForm(): void {
     if (this.actionLoading()) return;
+    if (this.createOnly()) this.dismissed.emit();
+    if (this.actionLoading()) return;
     this.clearProductFormImage();
     this.currentProductImageUrl.set(null);
     this.productFormMode.set(null);
@@ -337,6 +345,7 @@ export class CatalogPage implements OnInit {
     this.error.set(null);
     request$.pipe(take(1)).subscribe({
       next: saved => {
+        this.savedProductId = saved.id;
         const image = this.productFormImageFile;
         if (!image) {
           this.finishProductSave(mode, false);
@@ -373,6 +382,12 @@ export class CatalogPage implements OnInit {
   }
 
   private finishProductSave(mode: FormMode, imageUploaded: boolean): void {
+    if (this.createOnly() && this.savedProductId) {
+      this.actionLoading.set(false);
+      this.clearProductFormImage();
+      this.created.emit(this.savedProductId);
+      return;
+    }
     this.actionLoading.set(false);
     this.notice.set(mode === 'create'
       ? imageUploaded ? 'Producto e imagen guardados correctamente.' : 'Producto creado correctamente.'

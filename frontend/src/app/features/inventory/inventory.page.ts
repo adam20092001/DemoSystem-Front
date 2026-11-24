@@ -1,3 +1,4 @@
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +23,7 @@ import {
   RegisterInventoryMovementRequest,
 } from './inventory.model';
 import { InventoryService } from './inventory.service';
+import { LocationOption, LocationsService, StockByLocation } from './locations.service';
 import { dateTime, quantity } from '../commercial/commercial.util';
 
 type InventoryTab = 'movements' | 'low-stock';
@@ -32,11 +34,12 @@ interface MovementForm {
   quantity: string;
   reason: string;
   notes: string;
+  locationId: string;
 }
 
 @Component({
   selector: 'app-inventory',
-  imports: [FormsModule],
+  imports: [DateInputComponent, FormsModule],
   templateUrl: './inventory.page.html',
   styleUrl: './inventory.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,6 +48,7 @@ export class InventoryPage implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly catalog = inject(CatalogService);
   private readonly inventory = inject(InventoryService);
+  private readonly locationsApi = inject(LocationsService);
 
   protected readonly canWrite = computed(() => ['ADMIN', 'WAREHOUSE'].includes(this.auth.role()));
   protected readonly activeTab = signal<InventoryTab>('movements');
@@ -57,6 +61,9 @@ export class InventoryPage implements OnInit {
   protected readonly unitOptions = signal<Unit[]>([]);
   protected readonly trackedProductsTotal = signal(0);
   protected readonly selectedStock = signal<ProductStock | null>(null);
+  protected readonly stockByLocation = signal<StockByLocation | null>(null);
+  protected readonly locationOptions = signal<LocationOption[]>([]);
+  protected movementLocationId = '';
 
   protected readonly loadingMovements = signal(false);
   protected readonly loadingLowStock = signal(false);
@@ -88,6 +95,7 @@ export class InventoryPage implements OnInit {
     this.loadLookups();
     this.loadMovements();
     this.loadLowStock();
+    this.locationsApi.activeLocations().pipe(take(1)).subscribe({ next: locations => this.locationOptions.set(locations), error: error => this.error.set(errorMessage(error)) });
   }
 
   protected switchTab(tab: InventoryTab): void {
@@ -133,6 +141,7 @@ export class InventoryPage implements OnInit {
     this.movementOrigin = '';
     this.movementDateFrom = '';
     this.movementDateTo = '';
+    this.movementLocationId = '';
     this.loadMovements(1);
   }
 
@@ -147,6 +156,7 @@ export class InventoryPage implements OnInit {
       ...(this.movementOrigin ? { origin: this.movementOrigin as InventoryMovementOrigin } : {}),
       ...(this.movementDateFrom ? { dateFrom: startOfDay(this.movementDateFrom) } : {}),
       ...(this.movementDateTo ? { dateTo: endOfDay(this.movementDateTo) } : {}),
+      ...(this.movementLocationId ? { locationId: this.movementLocationId } : {}),
     }).pipe(
       take(1),
       finalize(() => this.loadingMovements.set(false)),
@@ -262,6 +272,7 @@ export class InventoryPage implements OnInit {
       quantity: this.movementForm.quantity.trim(),
       reason: this.movementForm.reason.trim(),
       ...(this.movementForm.notes.trim() ? { notes: this.movementForm.notes.trim() } : {}),
+      ...(this.movementForm.locationId ? { locationId: this.movementForm.locationId } : {}),
     };
 
     this.actionLoading.set(true);
@@ -331,6 +342,11 @@ export class InventoryPage implements OnInit {
     return quantity(value, decimals);
   }
 
+  protected locationQuantity(locationId: string): string {
+    const selected = locationId || this.locationOptions().find(item => item.warehouseCode === 'MAIN' && item.isDefault)?.id;
+    return this.stockByLocation()?.locations.find(row => row.location.id === selected)?.quantity ?? '0';
+  }
+
   private loadProductStock(productId: string): void {
     this.loadingStock.set(true);
     this.inventory.getProductStock(productId).pipe(
@@ -338,6 +354,11 @@ export class InventoryPage implements OnInit {
       finalize(() => this.loadingStock.set(false)),
     ).subscribe({
       next: stock => this.selectedStock.set(stock),
+      error: error => this.error.set(errorMessage(error)),
+    });
+    this.stockByLocation.set(null);
+    this.locationsApi.stockByLocation(productId).pipe(take(1)).subscribe({
+      next: stock => this.stockByLocation.set(stock),
       error: error => this.error.set(errorMessage(error)),
     });
   }
@@ -356,6 +377,7 @@ const ORIGIN_LABELS: Record<InventoryMovementOrigin, string> = {
   SALE: 'Venta',
   SALE_CANCELLATION: 'Anulación de venta',
   OTHER: 'Otro',
+  TRANSFER: 'Transferencia',
 };
 
 function emptyMovementForm(): MovementForm {
@@ -365,6 +387,7 @@ function emptyMovementForm(): MovementForm {
     quantity: '',
     reason: defaultReason('ENTRY'),
     notes: '',
+    locationId: '',
   };
 }
 

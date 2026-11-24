@@ -1,5 +1,7 @@
+import { CurrencySelectComponent } from '../../shared/currency-select.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal, input, output } from '@angular/core';
+import { CountrySelectComponent } from '../../shared/country-select.component';
 import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
@@ -9,15 +11,19 @@ import { SaveSupplierRequest, Supplier, SupplierDocumentType } from './procureme
 import { ProcurementService } from './procurement.service';
 
 @Component({
-  selector: 'app-suppliers', imports: [FormsModule],
+  selector: 'app-suppliers', imports: [CurrencySelectComponent, FormsModule, CountrySelectComponent],
   templateUrl: './suppliers.page.html',
   styleUrls: ['../commercial/commercial-page.shared.scss', './procurement.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SuppliersPage implements OnInit {
+  readonly createOnly = input(false);
+  readonly created = output<Supplier>();
+  readonly dismissed = output<void>();
   private readonly api = inject(ProcurementService);
   protected readonly auth = inject(AuthService);
-  protected readonly canWrite = computed(() => this.auth.role() === 'ADMIN');
+  protected readonly canWrite = computed(() => ['ADMIN', 'PURCHASING'].includes(this.auth.role()));
+  protected readonly canChangeStatus = computed(() => this.auth.role() === 'ADMIN');
   protected readonly result = signal<PaginatedResponse<Supplier> | null>(null);
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -31,7 +37,8 @@ export class SuppliersPage implements OnInit {
   protected pageSize = 20;
   protected form = emptySupplierForm();
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void { if (this.createOnly()) this.openCreate(); else this.load(); }
+  protected closeForm(): void { if (this.saving()) return; this.formOpen.set(false); if (this.createOnly()) this.dismissed.emit(); }
   protected load(page = 1): void {
     this.loading.set(true); this.error.set(null);
     this.api.listSuppliers({ page, limit: this.pageSize, search: this.search, status: this.status, documentType: this.documentType })
@@ -56,7 +63,7 @@ export class SuppliersPage implements OnInit {
     this.saving.set(true); this.error.set(null);
     const request = this.editing() ? this.api.updateSupplier(this.editing()!.id, body) : this.api.createSupplier(body);
     request.pipe(take(1), finalize(() => this.saving.set(false))).subscribe({
-      next: () => { this.formOpen.set(false); this.notice.set(this.editing() ? 'Proveedor actualizado.' : 'Proveedor registrado.'); this.load(this.result()?.page ?? 1); },
+      next: item => { this.formOpen.set(false); if (this.createOnly()) { this.created.emit(item); return; } this.notice.set(this.editing() ? 'Proveedor actualizado.' : 'Proveedor registrado.'); this.load(this.result()?.page ?? 1); },
       error: error => this.error.set(requestErrorMessage(error)),
     });
   }

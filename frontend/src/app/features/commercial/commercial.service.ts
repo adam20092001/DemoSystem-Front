@@ -93,10 +93,10 @@ export class CommercialService {
     return this.api.post<SaleDetail, CreateSaleRequest>('sales', request);
   }
 
-  createSaleFromQuote(quoteId: string, payments?: PaymentRequest[]): Observable<SaleDetail> {
-    return this.api.post<SaleDetail, { payments?: PaymentRequest[] }>(
+  createSaleFromQuote(quoteId: string, payments?: PaymentRequest[], locations?: Array<{ productId: string; locationId: string }>): Observable<SaleDetail> {
+    return this.api.post<SaleDetail, { payments?: PaymentRequest[]; locations?: Array<{ productId: string; locationId: string }> }>(
       `sales/from-quote/${quoteId}`,
-      payments?.length ? { payments } : {},
+      { ...(payments?.length ? { payments } : {}), ...(locations?.length ? { locations } : {}) },
     );
   }
 

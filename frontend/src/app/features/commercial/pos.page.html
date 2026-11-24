@@ -114,12 +114,13 @@
                     @if (product.isInventoryTracked) { <strong class="cart-stock" [class.cart-stock--low]="stockState(product) === 'low'">Disponible: {{ formatQuantity(product.stockCurrent, product.unit.allowDecimal) }} {{ product.unit.abbreviation }}</strong> }
                   </div>
                   <strong class="cart-line-total">{{ formatMoney(lineTotal(line)) }}</strong>
+                  @if (product.isInventoryTracked) { <label class="line-discount"><span>Ubicación de salida</span><select class="input" [name]="'posLocation' + line.key" [(ngModel)]="line.locationId"><option value="">Principal / predeterminada</option>@for (location of locations(); track location.id) { <option [value]="location.id">{{ location.warehouseCode }}/{{ location.code }}</option> }</select><small>Disponible: {{ locationStock(line) }}</small></label> }
                   <div class="quantity-control" aria-label="Cantidad">
                     <button type="button" (click)="changeQuantity(line, -1)" aria-label="Reducir cantidad">−</button>
                     <input class="mono" [name]="'posQuantity' + line.key" [(ngModel)]="line.quantity" inputmode="decimal" aria-label="Cantidad de producto">
                     <button type="button" (click)="changeQuantity(line, 1)" aria-label="Aumentar cantidad">+</button>
                   </div>
-                  <label class="line-discount"><span>Descuento</span><span class="money-input"><span>S/</span><input [name]="'posLineDiscount' + line.key" [(ngModel)]="line.discount" inputmode="decimal" placeholder="0.00"></span></label>
+                  <label class="line-discount"><span>Descuento</span><span class="money-input"><span>S/</span><input appMoney [name]="'posLineDiscount' + line.key" [(ngModel)]="line.discount" inputmode="decimal" placeholder="0.00"></span></label>
                   <button class="remove-product" type="button" aria-label="Quitar producto" (click)="removeLine(line.key)">×</button>
                 </article>
               }
@@ -148,7 +149,7 @@
           @for (payment of paymentLines; track payment.key; let index = $index) {
             <div class="payment-fields">
               <label class="field"><span>Método {{ index + 1 }} *</span><select class="input" [name]="'posPaymentMethod' + payment.key" [(ngModel)]="payment.method">@for (method of paymentMethods(); track method.id) { <option [ngValue]="method.code">{{ method.name }}</option> }</select></label>
-              <label class="field"><span class="field-label-row"><span>Monto *</span><button type="button" (click)="setRemainingPayment(payment)">Completar saldo</button></span><input class="input mono" [name]="'posPaymentAmount' + payment.key" [(ngModel)]="payment.amount" inputmode="decimal" placeholder="0.00"></label>
+              <label class="field"><span class="field-label-row"><span>Monto *</span><button type="button" (click)="setRemainingPayment(payment)">Completar saldo</button></span><input appMoney class="input mono" [name]="'posPaymentAmount' + payment.key" [(ngModel)]="payment.amount" inputmode="decimal" placeholder="0.00"></label>
               <label class="field"><span>Referencia{{ selectedMethodRequiresReference(payment) ? ' *' : '' }}</span><input class="input" [name]="'posPaymentReference' + payment.key" [(ngModel)]="payment.reference" maxlength="100" placeholder="Voucher o autorización"></label>
               <button class="icon-button" type="button" aria-label="Quitar pago" (click)="removePayment(payment.key)">×</button>
             </div>

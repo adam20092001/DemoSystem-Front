@@ -80,21 +80,17 @@
     </label>
     <label class="field">
       <span>Desde</span>
-      <input
-        class="input"
-        type="date"
+      <app-date-input
         name="accountingPostedFrom"
         [(ngModel)]="postedFrom"
-      />
+      ></app-date-input>
     </label>
     <label class="field">
       <span>Hasta</span>
-      <input
-        class="input"
-        type="date"
+      <app-date-input
         name="accountingPostedTo"
         [(ngModel)]="postedTo"
-      />
+      ></app-date-input>
     </label>
     <div class="filter-actions">
       <button class="btn btn--primary" type="submit">Aplicar</button>

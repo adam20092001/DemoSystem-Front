@@ -2,7 +2,7 @@
   @if (menuOpen()) { <div class="scrim" (click)="menuOpen.set(false)"></div> }
 
   <aside class="sidebar" [class.is-open]="menuOpen()">
-    <a class="brand" routerLink="/dashboard" (click)="menuOpen.set(false)">
+    <a class="brand" [routerLink]="auth.role() === 'PURCHASING' ? '/purchases' : auth.role() === 'WAREHOUSE' ? '/purchase-receiving' : auth.role() === 'ACCOUNTANT' ? '/accounting' : '/dashboard'" (click)="menuOpen.set(false)">
       <span class="brand-text"><strong>Sistema de Gestion</strong><small>Gestión empresarial</small></span>
     </a>
 

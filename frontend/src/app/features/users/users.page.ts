@@ -46,6 +46,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   WAREHOUSE: 'Almacén',
   MANAGEMENT: 'Gerencia',
   ACCOUNTANT: 'Contador',
+  PURCHASING: 'Compras',
 };
 
 const STATUS_LABELS: Record<UserStatus, string> = {

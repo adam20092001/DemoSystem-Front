@@ -14,5 +14,5 @@ export const roleGuard: CanActivateFn = (route) => {
   const allowedRoles = route.data['roles'] as UserRole[] | undefined;
 
   if (!allowedRoles || allowedRoles.includes(auth.role())) return true;
-  return router.createUrlTree([auth.role() === 'ACCOUNTANT' ? '/accounting' : '/dashboard']);
+  return router.createUrlTree([auth.role() === 'ACCOUNTANT' ? '/accounting' : auth.role() === 'PURCHASING' ? '/purchases' : auth.role() === 'WAREHOUSE' ? '/purchase-receiving' : '/dashboard']);
 };

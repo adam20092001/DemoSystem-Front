@@ -2,9 +2,10 @@
   <div>
     <p class="eyebrow">Centro de operaciones</p>
     <h1>Resumen comercial</h1>
+    @if (updatedAt()) { <span class="updated">Actualizado {{ updatedAt() }}</span> }
   </div>
   <div class="page-actions">
-    <a class="btn btn--ghost" routerLink="/pos">Ir al punto de venta</a>
+    @if (auth.role() === 'ADMIN' || auth.role() === 'SELLER') { <a class="btn btn--ghost" routerLink="/pos">Nueva venta</a> }
     <button class="btn btn--primary" type="button" (click)="loadDashboard()" [disabled]="loading()">
       {{ loading() ? 'Actualizando…' : 'Actualizar' }}
     </button>
@@ -29,9 +30,11 @@
       }
     </strong>
   </div>
-  <label class="field"><span>Desde</span><input class="input" type="date" name="dashboardFrom" [(ngModel)]="from"></label>
-  <label class="field"><span>Hasta</span><input class="input" type="date" name="dashboardTo" [(ngModel)]="to"></label>
+  <label class="field"><span>Desde</span><app-date-input name="dashboardFrom" [(ngModel)]="from"></app-date-input></label>
+  <label class="field"><span>Hasta</span><app-date-input name="dashboardTo" [(ngModel)]="to"></app-date-input></label>
   <div class="period-actions">
+    <button class="btn btn--quiet" type="button" (click)="setPeriod(7)" [disabled]="loading()">7 días</button>
+    <button class="btn btn--quiet" type="button" (click)="setPeriod(30)" [disabled]="loading()">30 días</button>
     <button class="btn btn--ghost" type="submit" [disabled]="loading()">Aplicar</button>
     <button class="btn btn--quiet" type="button" (click)="clearPeriod()" [disabled]="loading()">Mes actual</button>
   </div>
@@ -44,19 +47,19 @@
     @if (data.sales) {
       <a class="metric metric--sales surface" routerLink="/sales">
         <span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg></span>
-        <p>Ventas</p><strong>{{ formatMoney(data.sales.total) }}</strong><small>{{ data.sales.count }} operaciones</small>
+        <p>Ventas</p><strong>{{ formatMoney(data.sales.total) }}</strong><small>{{ data.sales.count }} operaciones</small><span class="metric-comparison">{{ change(data.sales.total, previous()?.sales?.total) }}</span>
       </a>
     }
     @if (data.collections) {
       <a class="metric surface" routerLink="/payments">
         <span class="metric-icon metric-icon--ok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM4 10h16M8 15h4"/></svg></span>
-        <p>Cobrado</p><strong>{{ formatMoney(data.collections.total) }}</strong><small>{{ data.collections.count }} pagos</small>
+        <p>Cobrado</p><strong>{{ formatMoney(data.collections.total) }}</strong><small>{{ data.collections.count }} pagos</small><span class="metric-comparison">{{ change(data.collections.total, previous()?.collections?.total) }}</span>
       </a>
     }
     @if (data.receivables) {
       <a class="metric surface" routerLink="/payments">
         <span class="metric-icon metric-icon--warn" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-        <p>Por cobrar</p><strong>{{ formatMoney(data.receivables.totalBalance) }}</strong><small>{{ data.receivables.count }} ventas</small>
+        <p>Por cobrar</p><strong>{{ formatMoney(data.receivables.totalBalance) }}</strong><small>{{ data.receivables.count }} ventas · saldo actual</small>
       </a>
     }
     @if (data.quotes) {
@@ -68,8 +71,39 @@
     @if (data.lowStock) {
       <a class="metric surface" [class.metric--attention]="data.lowStock.count > 0" routerLink="/inventory">
         <span class="metric-icon metric-icon--stock" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg></span>
-        <p>Stock bajo</p><strong>{{ data.lowStock.count }}</strong><small>Productos</small>
+        <p>Stock bajo</p><strong>{{ data.lowStock.count }}</strong><small>Productos · estado actual</small>
       </a>
+    }
+  </section>
+
+  <section class="analytics-grid" aria-label="Análisis comercial" [attr.aria-busy]="loading()">
+    @if (data.sales && data.collections) {
+      <article class="panel surface performance-panel">
+        <header class="panel-head"><div><p class="eyebrow">Actividad comercial</p><h2>Ventas y cobros</h2></div><span class="period-badge">Período seleccionado</span></header>
+        <div class="performance-body">
+          <div class="chart-legend"><span><i class="legend-dot current"></i>Actual</span><span><i class="legend-dot previous"></i>Anterior · igual duración</span></div>
+          @for (metric of [{ label: 'Ventas', current: data.sales.total, previous: previous()?.sales?.total }, { label: 'Cobros', current: data.collections.total, previous: previous()?.collections?.total }]; track metric.label) {
+            <div class="bar-group"><div class="bar-label"><strong>{{ metric.label }}</strong><span>{{ change(metric.current, metric.previous) }}</span></div>
+              <div class="comparison-row"><div class="comparison-track"><span class="current" [style.width.%]="bar(metric.current, metric.previous ?? '0')"></span></div><strong>{{ formatMoney(metric.current) }}</strong></div>
+              @if (metric.previous !== undefined) { <div class="comparison-row secondary"><div class="comparison-track"><span class="previous" [style.width.%]="bar(metric.previous!, metric.current)"></span></div><span>{{ formatMoney(metric.previous!) }}</span></div> }
+            </div>
+          }
+          <div class="chart-foot"><span>Los cobros pueden corresponder a ventas de otros períodos.</span><div><span>Ticket promedio</span><strong>{{ data.sales.count ? formatMoney(+data.sales.total / data.sales.count) : '—' }}</strong></div></div>
+        </div>
+      </article>
+    }
+    @if (data.quotes) {
+      <article class="panel surface conversion-panel">
+        <header class="panel-head"><div><p class="eyebrow">Efectividad comercial</p><h2>Conversión de cotizaciones</h2></div></header>
+        @if (data.quotes.total) {
+          <div class="conversion-body"><div class="donut-wrap">
+            <svg viewBox="0 0 120 120" role="img" [attr.aria-label]="conversion() + '% de cotizaciones convertidas'">
+              <circle class="donut-base" cx="60" cy="60" r="48" />
+              @for (segment of quoteSegments(); track segment.status) { <circle cx="60" cy="60" r="48" pathLength="100" fill="none" stroke-width="12" [attr.class]="'segment segment--' + segment.status" [attr.stroke-dasharray]="segment.share + ' ' + (100 - segment.share)" [attr.stroke-dashoffset]="-segment.offset" /> }
+            </svg><div class="donut-label"><strong>{{ conversion() }}<small>%</small></strong><span>convertidas</span></div>
+          </div><div class="donut-legend">@for (segment of quoteSegments(); track segment.status) { <div><span><i [attr.class]="'legend-dot dot--' + segment.status"></i>{{ quoteStatusLabel(segment.status) }}</span><strong>{{ segment.count }}</strong></div> }</div></div>
+        } @else { <div class="empty-state"><strong>Sin cotizaciones en este período</strong><span>La conversión aparecerá con la primera actividad.</span></div> }
+      </article>
     }
   </section>
 
@@ -118,7 +152,7 @@
 
     @if (data.quotes) {
       <article class="panel surface quotes-panel">
-        <header class="panel-head"><div><p class="eyebrow">Pipeline</p><h2>Cotizaciones por estado</h2></div><strong class="panel-total">{{ data.quotes.total }} total</strong></header>
+        <header class="panel-head"><div><p class="eyebrow">Pipeline</p><h2>Distribución de oportunidades</h2></div><strong class="panel-total">{{ data.quotes.total }} total</strong></header>
         @if (!data.quotes.total) {
           <div class="empty-state empty-state--compact"><strong>Sin actividad en este período</strong></div>
         } @else {

@@ -1,3 +1,4 @@
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -9,7 +10,7 @@ import { ElectronicDocument, ElectronicDocumentListItem, ElectronicDocumentStatu
 import { ElectronicDocumentsService } from './electronic-documents.service';
 import { dateTime } from '../commercial/commercial.util';
 
-@Component({ selector: 'app-electronic-documents', imports: [FormsModule], templateUrl: './electronic-documents.page.html', styleUrl: './electronic-documents.page.scss', changeDetection: ChangeDetectionStrategy.OnPush })
+@Component({ selector: 'app-electronic-documents', imports: [DateInputComponent, FormsModule], templateUrl: './electronic-documents.page.html', styleUrl: './electronic-documents.page.scss', changeDetection: ChangeDetectionStrategy.OnPush })
 export class ElectronicDocumentsPage implements OnInit {
   protected readonly service = inject(ElectronicDocumentsService); private readonly auth = inject(AuthService);
   protected readonly isAdmin = computed(() => this.auth.role() === 'ADMIN');

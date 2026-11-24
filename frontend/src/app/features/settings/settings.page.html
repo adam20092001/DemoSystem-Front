@@ -21,7 +21,7 @@
   <section class="surface settings-card fiscal-card">
     <header><p class="eyebrow">Comercial</p><h2>Moneda e impuestos</h2></header>
     <div class="form-grid">
-      <label class="field"><span>Moneda *</span><input class="input mono" name="currencyCode" [(ngModel)]="form.currencyCode" maxlength="3" [disabled]="!canEdit()"></label>
+      <label class="field"><span>Moneda *</span><app-currency-select [(value)]="form.currencyCode" [disabled]="!canEdit()" /></label>
       <label class="field"><span>Símbolo *</span><input class="input" name="currencySymbol" [(ngModel)]="form.currencySymbol" maxlength="5" [disabled]="!canEdit()"></label>
       <label class="toggle span-2"><input type="checkbox" name="taxEnabled" [(ngModel)]="form.taxEnabled" [disabled]="!canEdit()"><span><strong>Aplicar IGV</strong><small>Se aplicará a documentos comerciales nuevos.</small></span></label>
       <label class="field"><span>Tasa de IGV (%)</span><input class="input" name="taxRate" [(ngModel)]="form.taxRate" inputmode="decimal" [disabled]="!canEdit() || !form.taxEnabled"></label>

@@ -1,0 +1,14 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const ts = require('typescript');
+const fs = require('node:fs');
+const target = { exports: {} };
+const js = ts.transpileModule(fs.readFileSync(require('node:path').resolve(__dirname, '../src/app/shared/calendar.util.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+new Function('exports', 'module', js)(target.exports, target);
+const { calendarCells, calendarPosition } = target.exports;
+test('calendario inicia lunes y presenta seis semanas sin fechas duplicadas', () => { const days = calendarCells(2026, 10); assert.equal(days.length, 42); assert.equal(days[0].iso, '2026-10-26'); assert.equal(days.filter(day => day.inMonth).length, 30); assert.equal(new Set(days.map(day => day.iso)).size, 42); });
+test('febrero bisiesto incluye día 29', () => assert.equal(calendarCells(2028, 1).filter(day => day.inMonth).length, 29));
+test('límites deshabilitan días anteriores y posteriores, no el rango válido', () => { const days = calendarCells(2026, 10, '2026-11-10', '2026-11-20'); assert.equal(days.find(day => day.iso === '2026-11-09').disabled, true); assert.equal(days.find(day => day.iso === '2026-11-10').disabled, false); assert.equal(days.find(day => day.iso === '2026-11-21').disabled, true); });
+test('se ubica debajo cuando cabe', () => assert.deepEqual(calendarPosition({ left: 100, top: 100, bottom: 140 }, { width: 320, height: 330 }, { width: 1280, height: 900 }), { left: 100, top: 146 }));
+test('cerca del borde inferior abre arriba y no se sale horizontalmente', () => { const point = calendarPosition({ left: 300, top: 600, bottom: 640 }, { width: 320, height: 330 }, { width: 390, height: 700 }); assert.equal(point.left, 58); assert.equal(point.top, 264); });
+test('en pantalla baja se mantiene dentro del área visible', () => { const point = calendarPosition({ left: 0, top: 170, bottom: 210 }, { width: 296, height: 330 }, { width: 320, height: 390 }); assert.equal(point.left, 12); assert.equal(point.top, 30); });

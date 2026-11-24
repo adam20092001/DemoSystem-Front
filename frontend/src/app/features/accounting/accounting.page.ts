@@ -1,3 +1,4 @@
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import {
   ChangeDetectionStrategy,
@@ -29,7 +30,7 @@ type AccountingTab = 'entries' | 'accounts';
 
 @Component({
   selector: 'app-accounting',
-  imports: [FormsModule],
+  imports: [DateInputComponent, FormsModule],
   templateUrl: './accounting.page.html',
   styleUrls: [
     '../commercial/commercial-page.shared.scss',

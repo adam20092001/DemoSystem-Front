@@ -4,8 +4,12 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { ApiRequestError } from '../errors/api-request.error';
 import { AuthService } from '../auth/auth.service';
+import { ApiFieldError, FieldErrorsService } from '../errors/field-errors.service';
 
 interface ErrorPayload {
+  kind?: unknown;
+  code?: unknown;
+  errors?: unknown;
   statusCode?: unknown;
   message?: unknown;
   error?: unknown;
@@ -16,6 +20,7 @@ interface ErrorPayload {
 export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  const fieldErrors = inject(FieldErrorsService);
 
   return next(request).pipe(
     catchError((error: unknown) => {
@@ -33,15 +38,17 @@ export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
       }
 
       const payload = isErrorPayload(error.error) ? error.error : {};
+      const fields = Array.isArray(payload.errors) ? payload.errors.filter((item): item is ApiFieldError => isRecord(item) && typeof item['field'] === 'string' && typeof item['message'] === 'string') : [];
+      if (payload.kind === 'FORM' && fields.length && request.method !== 'GET') fieldErrors.publish(fields);
       const message = normalizeMessage(payload.message) ?? defaultMessage(error.status);
 
       return throwError(() => new ApiRequestError(
         error.status,
-        typeof payload.error === 'string'
+        typeof payload.code === 'string' ? payload.code : typeof payload.error === 'string'
           ? payload.error
           : `HTTP_${error.status || 'NETWORK'}`,
         message,
-        typeof payload.path === 'string' ? { path: payload.path } : undefined,
+        { ...(typeof payload.path === 'string' ? { path: payload.path } : {}), kind: payload.kind, errors: fields },
       ));
     }),
   );

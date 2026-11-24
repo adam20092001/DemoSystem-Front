@@ -239,6 +239,7 @@ export interface SaleItem {
   discountType: 'FIXED' | 'PERCENT' | null;
   discountValue: string | null;
   discountAmount: string;
+  location?: { id: string; code: string; name: string; warehouse: { id: string; code: string } } | null;
 }
 
 export interface SaleInventoryMovement {
@@ -270,7 +271,7 @@ export interface SaleDetail extends SaleListItem {
 export interface CreateSaleRequest {
   customerId: string;
   discountAmount?: string;
-  items: QuoteLineRequest[];
+  items: Array<QuoteLineRequest & { locationId?: string }>;
   payment?: PaymentRequest;
   payments?: PaymentRequest[];
 }

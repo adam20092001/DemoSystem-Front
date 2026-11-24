@@ -4,7 +4,8 @@
 .uppercase { text-transform: uppercase; }
 .compact-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .lines-editor { display: grid; gap: 10px; }
-.shipment-line { display: grid; grid-template-columns: repeat(6, minmax(90px, 1fr)) 36px; gap: 9px; align-items: end; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.shipment-line { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.shipment-line > *, .compact-grid > * { min-width: 0; }
 .shipment-line .span-2 { grid-column: span 2; }
 .record-card { margin-top: 10px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); }
 .record-card__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface-2); }

@@ -1,3 +1,4 @@
+import { DateInputComponent } from '../../shared/date-input.component';
 import { visibleErrorSignal } from '../../core/notifications/notification.service';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -35,7 +36,7 @@ import { UsersService } from '../users/users.service';
 
 @Component({
   selector: 'app-reports',
-  imports: [FormsModule],
+  imports: [DateInputComponent, FormsModule],
   templateUrl: './reports.page.html',
   styleUrls: ['../commercial/commercial-page.shared.scss', './reports.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

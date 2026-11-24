@@ -4,6 +4,7 @@ import { PaymentMethod } from './commercial.model';
 import { PaymentMethodDefinition } from '../payment-methods/payment-method.model';
 
 export function requestErrorMessage(error: unknown): string {
+  if (error instanceof ApiRequestError && error.details?.['kind'] === 'FORM') return 'Revisa los campos marcados para continuar.';
   return error instanceof ApiRequestError
     ? error.message
     : 'No se pudo completar la operación. Inténtalo nuevamente.';
@@ -13,7 +14,7 @@ export function money(value: string | number | null | undefined, currency = 'PEN
   const amount = Number(value ?? 0);
   const safeAmount = Number.isFinite(amount) ? amount : 0;
   try {
-    return new Intl.NumberFormat('es-PE', { style: 'currency', currency, minimumFractionDigits: 2 }).format(safeAmount);
+    return new Intl.NumberFormat('es-PE', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(safeAmount);
   } catch {
     return `${currency} ${safeAmount.toFixed(2)}`;
   }
@@ -30,7 +31,7 @@ export function quantity(value: string | number, allowDecimal = true): string {
 
 export function shortDate(value: string): string {
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1].slice(-2)}`;
+  if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   const parts = dateParts(date);
@@ -67,7 +68,7 @@ export function validQuantity(value: string): boolean {
 
 function dateParts(date: Date, includeTime = false): Record<string, string> {
   const options: Intl.DateTimeFormatOptions = {
-    day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/Lima',
+    day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Lima',
     ...(includeTime ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' as const } : {}),
   };
   return Object.fromEntries(
